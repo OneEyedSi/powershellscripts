@@ -1,0 +1,3 @@
+invoke-Pester -Script C:\PowerShell\DemosAndExperiments\PesterTests\ScriptToTest.Tests.ps1
+
+invoke-Pester -Script C:\PowerShell\DemosAndExperiments\PesterTests\ScriptToTest.Tests.ps1 -TestName 'Set-File'

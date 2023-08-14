@@ -1,0 +1,31 @@
+Line to create file
+Hello World!
+
+Command line arguments supplied:
+    0: 123
+
+Before error 0
+Before error 1
+Before error 2
+Before error 3
+Before error 4
+Before error 5
+Before error 6
+Before error 7
+Before error 8
+Before error 9
+
+ERROR!!
+
+After 0
+After 1
+After 2
+After 3
+After 4
+After 5
+After 6
+After 7
+After 8
+After 9
+
+Expected exit code: 123
