@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="TransformXml" AssemblyFile="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(MSBuildToolsVersion)\Web\Microsoft.Web.Publishing.Tasks.dll" />
+  <Target Name="TransformConfigFile">
+    <Error Condition="$(SourceConfiguration) == ''" Text="A source configuration to transform must be supplied." />
+    <Error Condition="$(DestConfiguration) == ''" Text="A destination configuration file must be supplied." />
+    <Error Condition="!Exists('$(SourceConfiguration)')" Text="The source configuration '$(SourceConfiguration)' does not exist." />
+    <Error Condition="!Exists('$(DestConfiguration)')" Text="The destination configuration '$(DestConfiguration)' does not exist." />
+    <Message Text="Transforming $(SourceConfiguration) into $(DestConfiguration)" Condition="Exists('$(SourceConfiguration)')" />
+    <TransformXml Source="$(DestConfiguration)" Transform="$(SourceConfiguration)" Destination="$(DestConfiguration)" Condition="Exists('$(SourceConfiguration)')" />
+  </Target>
+</Project>
