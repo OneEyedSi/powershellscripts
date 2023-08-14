@@ -1,0 +1,50 @@
+Builds and Deployments have a tough time when it comes to PowerShell verbs.
+
+From https://msdn.microsoft.com/en-us/library/ms714428(v=vs.85).aspx
+
+----
+
+Publish (pb)
+Makes a resource available to others. This verb is paired with Unpublish.
+For this action, do not use verbs such as Deploy, Release, or Install.
+
+----
+
+We could potentially use "New":
+
+----
+
+New (n)
+Creates a resource. (The Set verb can also be used when creating a resource that includes data, such as the Set-Variable cmdlet.)
+For this action, do not use verbs such as Create, Generate, Build, Make, or Allocate.
+
+----
+
+Install (is)
+Places a resource in a location, and optionally initializes it. This verb is paired with Uninstall.
+For this action, do not a use verb such as Setup.
+
+----
+
+But when we roll-back/revert/restore, we aren't really "uninstalling" when we talk about a website:
+
+----
+
+Uninstall (us)
+Removes a resource from an indicated location. This verb is paired with Install.
+
+----
+
+Restore (rr)
+Sets a resource to a predefined state, such as a state set by Checkpoint. For example, the Restore-Computer cmdlet starts a system restore on the local computer.
+For this action, do not use verbs such as Repair, Return, Undo, or Fix.
+
+----
+
+At least Backups are easy:
+
+----
+
+Backup (ba)
+Stores data by replicating it.
+For this action, do not use verbs such as Save, Burn, Replicate, or Sync.
