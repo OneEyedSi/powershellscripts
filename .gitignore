@@ -16,3 +16,6 @@ Modules/
 
 # Files we don't want in a public repo
 ExcludeFromRepo/
+
+# Log files
+*.log
