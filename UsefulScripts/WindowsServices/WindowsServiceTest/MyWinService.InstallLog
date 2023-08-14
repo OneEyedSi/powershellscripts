@@ -1,0 +1,471 @@
+﻿Installing assembly 'C:\Temp\MyWinService\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\MyWinService\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\MyWinService\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\MyWinService\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\MyWinService\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\MyWinService\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\MyWinService\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\MyWinService\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\MyWinService\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Attempt to stop service MyWinService.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Attempt to stop service MyWinService.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Creating EventLog source MyWinService in log Application...
+Rolling back assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Restoring event log to previous state for source MyWinService.
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Warning: The source MyWinService is not registered on the local machine.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Creating EventLog source MyWinService in log Application...
+Rolling back assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Restoring event log to previous state for source MyWinService.
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+An exception occurred during the uninstallation of the System.Diagnostics.EventLogInstaller installer.
+System.Security.SecurityException: The source was not found, but some or all event logs could not be searched.  Inaccessible logs: Security.
+An exception occurred while uninstalling. This exception will be ignored and the uninstall will continue. However, the application might not be fully uninstalled after the uninstall is complete.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Creating EventLog source MyWinService in log Application...
+Rolling back assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Restoring event log to previous state for source MyWinService.
+An exception occurred during the Rollback phase of the System.Diagnostics.EventLogInstaller installer.
+System.Security.SecurityException: The source was not found, but some or all event logs could not be searched.  Inaccessible logs: Security.
+An exception occurred during the Rollback phase of the installation. This exception will be ignored and the rollback will continue. However, the machine might not fully revert to its initial state after the rollback is complete.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Creating EventLog source MyWinService in log Application...
+Rolling back assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Restoring event log to previous state for source MyWinService.
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Warning: The source MyWinService is not registered on the local machine.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Creating EventLog source MyWinService in log Application...
+Rolling back assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Restoring event log to previous state for source MyWinService.
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Warning: The source MyWinService is not registered on the local machine.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Uninstalling assembly 'C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\WindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Removing EventLog source MyWinService.
+Service MyWinService is being removed from the system...
+Service MyWinService was successfully removed from the system.
+Installing assembly 'C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Creating EventLog source MyWinService in log Application...
+Rolling back assembly 'C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Restoring event log to previous state for source MyWinService.
+An exception occurred during the Rollback phase of the System.Diagnostics.EventLogInstaller installer.
+System.Security.SecurityException: The source was not found, but some or all event logs could not be searched.  Inaccessible logs: Security.
+An exception occurred during the Rollback phase of the installation. This exception will be ignored and the rollback will continue. However, the machine might not fully revert to its initial state after the rollback is complete.
+Installing assembly 'C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
+Installing service MyWinService...
+Service MyWinService has been successfully installed.
+Creating EventLog source MyWinService in log Application...
+Committing assembly 'C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe'.
+Affected parameters are:
+   logtoconsole = 
+   assemblypath = C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.exe
+   logfile = C:\Temp\DemoCode\UnityWithWindowsServiceDemo\MyWinService\bin\Debug\MyWinService.InstallLog
