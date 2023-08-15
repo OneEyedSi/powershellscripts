@@ -3,16 +3,14 @@
 Open the latest KeePass database.
 
 .DESCRIPTION
-Opens the latest version of a KeePass database.  As at the time of creation can open one of two 
-databases:
+Opens the latest version of a KeePass database.  As at August 2023 can open one database:
 
 1. SimonsDatabase_xxx.kdbx:  Personal passwords and accounts.
-2. WorkDatabase_xxx.kdbx:  Passwords and accounts related to work.
 
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5
-Version:		1.0.0
+Version:		1.0.1
 Date:			10 Feb 2021
 
 #>
@@ -24,8 +22,7 @@ Param
 $_keePassFolderPath = 'C:\KeePass'
 
 $_database = @{
-                Simon = 'SimonsDatabase_*.kdbx'
-                Work = 'WorkDatabase_*.kdbx'        
+                Simon = 'SimonsDatabase_*.kdbx' 
             }
 
 $_keePassExecutablePath = 'C:\Program Files (x86)\KeePass Password Safe 2\KeePass.exe'
