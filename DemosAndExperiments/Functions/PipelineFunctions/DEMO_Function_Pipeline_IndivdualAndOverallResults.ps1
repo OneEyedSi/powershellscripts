@@ -17,44 +17,6 @@ Writes the keys and values of a hash table to the host.
 
 .NOTES
 #>
-function Write-HashTable (
-        [Parameter(Mandatory=$True)]
-        $HashTable, 
-
-        [Parameter(Mandatory=$True)]
-        [string]$Title
-    )
-{
-    Write-Host $Title
-    foreach($Key in $HashTable.Keys)
-    {
-        $Value = $HashTable[$Key] 
-
-        try
-        {
-            $Type = " (type $($Value.GetType().FullName))"
-        }
-        catch
-        {
-            $Type = ""
-        }
-               
-        if ($Value -eq $Null)
-        {
-            $Value = "[NULL]"
-        }
-        elseif ($Value -is [string] -and $Value -eq "")
-        {
-            $Value = "[EMPTY STRING]"
-        }
-        elseif ($Value -is [string] -and $Value.Trim() -eq "")
-        {
-            $Value = "[BLANK STRING]"
-        }
-
-        Write-Host "[$Key] $Type : '$Value'"
-    }
-}
 
 <#
 .SYNOPSIS
