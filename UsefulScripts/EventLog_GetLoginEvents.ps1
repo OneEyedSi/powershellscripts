@@ -9,15 +9,15 @@ automated system login events.
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
-Version:		1.1.0 
-Date:			20 Aug 2021
+Version:		2.0.0 
+Date:			  13 Sep 2023
 
 #>
 
 $numberOfEventsToReturn = 10
 $userNameToCheck = 'JoeBloggs'
-$computerToCheck = 'LAPTOP001'
 
+$computerToCheck = $env:COMPUTERNAME
 $filterXml = @"
 <QueryList>
   <Query Id="0" Path="Security">
