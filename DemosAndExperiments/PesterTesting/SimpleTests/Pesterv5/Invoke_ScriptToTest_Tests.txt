@@ -1,0 +1,23 @@
+# These use the format for Pester v5.  Pester v4 is totally different.  For those tests see Pesterv4 folder.
+
+$testFolder = 'C:\Users\SimonE\SimonsDocuments\IT\PowerShell\DemosAndExperiments\PesterTesting\SimpleTests\Pesterv5\'
+
+# All tests in folder
+# -------------------
+Invoke-Pester $testFolder -Output Detailed
+
+# or:
+$config = New-PesterConfiguration
+$config.Run.Path = $testFolder
+Invoke-Pester -Configuration $config
+
+# Specific test
+# -------------
+Invoke-Pester "${testFolder}MyScriptToTest.Tests.ps1" -FullNameFilter 'Set-File' -Output Detailed
+
+# or:
+$config = New-PesterConfiguration
+$config.Run.Path = "${testFolder}MyScriptToTest.Tests.ps1"
+$config.Filter.FullName = 'Set-File'
+$config.Output.Verbosity = 'Detailed'
+Invoke-Pester -Configuration $config

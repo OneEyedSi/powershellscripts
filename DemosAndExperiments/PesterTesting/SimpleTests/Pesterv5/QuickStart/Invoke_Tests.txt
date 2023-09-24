@@ -1,0 +1,1 @@
+invoke-pester "C:\Users\SimonE\SimonsDocuments\IT\PowerShell\DemosAndExperiments\PesterTesting\SimpleTests\Pesterv5\QuickStart\Get-Planet.Tests.ps1"
