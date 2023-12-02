@@ -7,29 +7,63 @@ The names of the SQL scripts to run must be listed at the top of this script, in
 which they are to run (so, for example, list a script that creates a table before a script that 
 creates a trigger on that table).  
 
+As the SQL scripts are run the results are output to both the PowerShell console and to a log 
+file, which can be kept as a record of the results of a deployment.
+
 .NOTES
-The SQL scripts to run need to be in the same folder as this script.
-
-This script does not need to be run on the SQL Server that is being updated.  it will connect to 
-the server selected by the user as long as it can access that server remotely.
-
-This script requires sqlcmd, the SQL Server Commandline Utility, to be installed on whichever 
-machine it is running on. 
-
-The logins specified in this script, that are used to run the SQL scripts on the selected 
-SQL Server, must have the following permissions as a minimum:
-
-    Either ALTER ANY LOGIN permission or membership of the securityadmin server role;
-
-    In the databases the scripts will execute in:
-        Membership of the db_ddladmin database role;
-        Either ALTER ANY USER permission or membership of the db_accessadmin database role;
-        Either ALTER ANY ROLE permission or membership of the db_securityadmin database role.
+Author:			Simon Elms
+Requires:		PowerShell 5 or greater (tested on version 5.1)
+                sqlcmd, the SQL Server Commandline Utility, which needs to be on the Windows PATH.
+                SqlServer PowerShell module (install from PowerShell Gallery, not installed as 
+                                            part of SQL Server)
+Version:		1.1.0
+Date:			4 Aug 2017
 
 When listing the SQL script file names, the file extensions are optional.  So a SQL script file 
 name could be either like "script_name.sql" or simply "script_name".
 
-WARNING: There is a bug in Invoke-Sqlcmd where an error in a SQL SELECT statement, such as 
+The SQL scripts to run need to be in the same folder as this script.
+
+This script does not need to be run on the SQL Server that is being updated.  It will connect to 
+the server selected by the user as long as it can access that server remotely.
+
+Permissions Required:
+The login used to run the SQL scripts on the selected SQL Server should have the following 
+permissions as a minimum:
+
+    In the databases the scripts will execute in:
+        Membership of the db_ddladmin database role;
+        Membership of the db_datareader and db_datawriter database roles.
+
+This will allow the SQL scripts run by this PowerShell script to create, update or delete 
+database objects such as tables, views, stored procedures, functions and triggers.  It will also 
+allow reading data from and writing data to tables in the database.
+
+If the SQL scripts run by this PowerShell script will create, update or delete database users or 
+roles, or change their permissions, the login will need the following additional permissions:
+
+    In the databases the scripts will execute in:
+        Either ALTER ANY USER permission or membership of the db_accessadmin database role;
+        Either ALTER ANY ROLE permission or membership of the db_securityadmin database role.
+
+Note that all the above permissions are included if the login is granted db_owner permissions on 
+the database.
+
+If the SQL scripts run by this PowerShell script will create, update or delete SQL Server logins, 
+the login used to run the SQL scripts on the selected SQL Server will need the following 
+additional permissions:
+
+    At the server level:
+        Either ALTER ANY LOGIN permission or membership of the securityadmin server role.
+
+Naming Conventions in this Script: 
+Parameters in this script at the script level and at the function level use PascalCase, with a 
+leading capital.  This is to match the convention used in core PowerShell modules, which use 
+PascalCase for parameters.  Local variables within a function use camelCase, with a leading 
+lowercase letter.  Script-level variables use _camelCase, with a leading underscore.
+
+WARNING: 
+There is a bug in Invoke-Sqlcmd where an error in a SQL SELECT statement, such as 
 "SELECT 1/0 AS Bang", will not be output to Invoke-Sqlcmd.  Worse, it will prevent other errors 
 that follow it in the script from being output as well.  So if there is an error in a SELECT 
 statement in a script that script will always appear to run successfully unless there is another 
@@ -49,21 +83,39 @@ $sqlScriptNames = @(
 
 # NOTE: All servers and credentials listed below are dummies, used for 
 # illustration only.  They do not really exist.
-[System.Object[]]$sqlServers = @(@{key="L"; serverName="(localdb)\mssqllocaldb"; 
-                    useWindowsAuthentication=$True; serverType="LOCALDB"; 
-                    menuText="(L)ocaldb`t`t((localdb)\mssqllocaldb)"},
-                @{key="D"; serverName="DEV.DEV.LOCAL"; 
-                    useWindowsAuthentication=$True; serverType="DEV"; 
-                    menuText="(D)ev`t`t`t(DEV.DEV.LOCAL)"},
-                @{key="T"; serverName="TEST.DEV.LOCAL"; 
-                    useWindowsAuthentication=$True; serverType="TEST"; 
-                    menuText="(T)est`t`t`t(TEST.DEV.LOCAL)"},
-                @{key="U"; serverName="SQLTEST01.sit.local"; 
-                    userName="SitUser"; password="qawsedrftg"; serverType="UAT"; 
-                    menuText="(U)AT`t`t`t(SQLTEST01)"}
-                @{key="P"; serverName="SQLPROD01.prod.local"; 
-                    userName="ProductionUser"; password="Password1"; serverType="LIVE"; 
-                    menuText="(P)roduction`t(SQLPROD01)"})
+[System.Object[]]$sqlServers = @(
+                                    @{
+                                        key="L"; 
+                                        serverName="(localdb)\mssqllocaldb"; 
+                                        useWindowsAuthentication=$True; 
+                                        serverType="LOCALDB"; 
+                                        menuText="(L)ocaldb`t`t((localdb)\mssqllocaldb)"},
+                                    @{
+                                        key="D"; 
+                                        serverName="DEV.DEV.LOCAL"; 
+                                        useWindowsAuthentication=$True; 
+                                        serverType="DEV"; 
+                                        menuText="(D)ev`t`t`t(DEV.DEV.LOCAL)"},
+                                    @{
+                                        key="T"; 
+                                        serverName="TEST.DEV.LOCAL"; 
+                                        useWindowsAuthentication=$True; 
+                                        serverType="TEST"; 
+                                        menuText="(T)est`t`t`t(TEST.DEV.LOCAL)"},
+                                    @{
+                                        key="U"; 
+                                        serverName="SQLTEST01.sit.local"; 
+                                        userName="SitUser"; 
+                                        password="qawsedrftg"; 
+                                        serverType="UAT"; 
+                                        menuText="(U)AT`t`t`t(SQLTEST01)"}
+                                    @{
+                                        key="P"; 
+                                        serverName="SQLPROD01.prod.local"; 
+                                        userName="ProductionUser"; 
+                                        password="Password1"; 
+                                        serverType="LIVE"; 
+                                        menuText="(P)roduction`t(SQLPROD01)"})
 
 $defaultDatabase = "Transport"
 
@@ -120,6 +172,9 @@ function Write-LogMessage (
     [string]$message,
 
     [Parameter(Mandatory=$False)]
+    [string]$consoleTextColor,
+
+    [Parameter(Mandatory=$False)]
     [string]$logFileName,
 
     [Parameter(Mandatory=$False)]
@@ -171,6 +226,10 @@ function Write-LogMessage (
     if ($isErrorMessage)
     {
         Write-Error $outputMessage
+    }
+    elseif ($consoleTextColor)
+    {
+        Write-Host $outputMessage -ForegroundColor $consoleTextColor
     }
     else
     {
@@ -743,12 +802,14 @@ function Update-Database (
     $message = "Finished running scripts.  Time taken: {0:hh\:mm\:ss\.fff} hh:mm:ss." -f $timeTaken
     Write-LogMessage $message -logFileName $logFileName
 
+    $messageColor = "Green"
     $message = "RESULT: No errors encountered."
     if (-not $allScriptsSuccessful)
     {
+        $messageColor = "Red"
         $message = "RESULT: ONE OR MORE ERRORS ENCOUNTERED.  For details search log messages above for the text `"ERROR:`"."
     }
-    Write-LogMessage $message -logFileName $logFileName
+    Write-LogMessage $message -consoleTextColor $messageColor -logFileName $logFileName
 
     Write-LogMessage "==============================" `
         -logFileName $logFileName -writeRawMessageOnly
