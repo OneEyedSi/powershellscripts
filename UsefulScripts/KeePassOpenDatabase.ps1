@@ -24,8 +24,8 @@ $_keePassFolderPath = 'C:\KeePass'
 $_database = @{
                 Simon = 'SimonsDatabase_*.kdbx' 
             }
-
-$_keePassExecutablePath = 'C:\Program Files (x86)\KeePass Password Safe 2\KeePass.exe'
+# No need for full path if executable folder is in PATH.
+$_keePassExecutablePath = 'KeePass.exe'
 
 # -------------------------------------------------------------------------------------------------
 # NO NEED TO CHANGE ANYTHING BELOW THIS POINT, THE REMAINDER OF THE CODE IS GENERIC.
