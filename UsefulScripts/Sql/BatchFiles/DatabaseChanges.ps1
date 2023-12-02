@@ -12,12 +12,12 @@ file, which can be kept as a record of the results of a deployment.
 
 .NOTES
 Author:			Simon Elms
-Requires:		PowerShell 5 or greater (tested on version 5.1)
+Requires:		PowerShell 5.1 or greater
                 sqlcmd, the SQL Server Commandline Utility, which needs to be on the Windows PATH.
                 SqlServer PowerShell module (install from PowerShell Gallery, not installed as 
                                             part of SQL Server)
-Version:		1.2.0
-Date:			11 Oct 2022
+Version:		1.3.0
+Date:			2 Dec 2023
 
 When listing the SQL script file names, the file extensions are optional.  So a SQL script file 
 name could be either like "script_name.sql" or simply "script_name".
@@ -26,6 +26,13 @@ The SQL scripts to run need to be in the same folder as this script.
 
 This script does not need to be run on the SQL Server that is being updated.  It will connect to 
 the server selected by the user as long as it can access that server remotely.
+
+ServerType SQLCMD Variable:
+This script will pass SQLCMD variable $(ServerType), set to the serverType selected by the user, 
+into the SQL scripts being executed.  If the variable is present in a SQL script (it doesn't have 
+to be) it can be used to vary data or script behaviour across different environments.  For 
+example, a CASE statement in a SQL script could be used to save different email recipients to a 
+table in the QA, UAT and LIVE environments.
 
 Permissions Required:
 The login used to run the SQL scripts on the selected SQL Server should have the following 
@@ -62,53 +69,59 @@ leading capital.  This is to match the convention used in core PowerShell module
 PascalCase for parameters.  Local variables within a function use camelCase, with a leading 
 lowercase letter.  Script-level variables use _camelCase, with a leading underscore.
 
-WARNING: 
-There is a bug in Invoke-Sqlcmd where an error in a SQL SELECT statement, such as 
-"SELECT 1/0 AS Bang", will not be output to Invoke-Sqlcmd.  Worse, it will prevent other errors 
-that follow it in the script from being output as well.  So if there is an error in a SELECT 
-statement in a script that script will always appear to run successfully unless there is another 
-error before the SELECT error.  Errors that do NOT originate in a SELECT statement, such as 
-"Cannot drop the table 'dbo.MyTable', because it does not exist or you do not have permission." 
-do not have this problem.
-
 #>
 
-$sqlScriptNames = @(
+# -------------------------------------------------------------------------------------------------
+# ADD RELEASE SCRIPTS HERE
+# -------------------------------------------------------------------------------------------------
+# Default file extension, if none is specified, is ".sql".
+$_sqlScriptNames = @(
                     "SqlCmdVarTest"
-                    "CodeStatus"
-                    "Site"
+                    "CreateTestTable1"
+                    "CreateTestTable2"
                     )
 
+# -------------------------------------------------------------------------------------------------
 # No changes needed below this point; the remaining code is generic.
+# -------------------------------------------------------------------------------------------------
+
+#region Configuration *****************************************************************************
+
+# Once configuration has been set up for the various servers it can be reused from one release to 
+# the next, without changes.
 
 # NOTE: All servers and credentials listed below are dummies, used for 
 # illustration only.  They do not really exist.
-[System.Object[]]$sqlServers = @(
+[System.Object[]]$_sqlServers = @(
                                     @{
                                         key="L"; 
                                         serverName="(localdb)\mssqllocaldb"; 
                                         useWindowsAuthentication=$True; 
                                         serverType="LOCALDB"; 
-                                        menuText="(L)ocaldb"},
+                                        menuText="(L)ocaldb"
+                                    },
                                     @{
                                         key="D"; 
                                         serverName="DEV.DEV.LOCAL"; 
                                         useWindowsAuthentication=$True; 
                                         serverType="DEV"; 
-                                        menuText="(D)ev"},
+                                        menuText="(D)ev"
+                                    },
                                     @{
                                         key="T"; 
                                         serverName="TEST.DEV.LOCAL"; 
                                         useWindowsAuthentication=$True; 
                                         serverType="TEST"; 
-                                        menuText="(T)est"},
+                                        menuText="(T)est"
+                                    },
                                     @{
                                         key="U"; 
                                         serverName="SQLTEST01.sit.local"; 
                                         userName="SitUser"; 
                                         password="qawsedrftg"; 
                                         serverType="UAT"; 
-                                        menuText="(U)AT"}
+                                        menuText="(U)AT"
+                                    },
                                     @{
                                         key="P"; 
                                         serverName="SQLPROD01.prod.local"; 
@@ -119,13 +132,18 @@ $sqlScriptNames = @(
                                     }
                                 )
 
-$_defaultDatabase = "Transport"
+# To run a script in a database other than the default database, include a USE <db name> statement 
+# in the script.
+$_defaultDatabase = "Test"
 
+# The log file will be created in the same folder as this script.
 $_logFileName = "release.log"
 # If set overwrites any existing log file.  If cleared appends to an existing log file.  If 
 # no log file exists a new one will be created, regardless of the setting of this variable.
 $_overwriteLogFile = $True 
 $_verboseLoggingOn = $True
+
+#endregion Configuration **************************************************************************
 
 <#
 .SYNOPSIS
@@ -227,7 +245,9 @@ function Write-LogMessage (
 
     if ($IsErrorMessage)
     {
-        Write-Error $outputMessage
+        # Don't write to Error stream, it will mess up the formatting of the lines.
+        # Instead just write text in red.
+        Write-Host $outputMessage -ForegroundColor 'Red'
     }
     elseif ($ConsoleTextColor)
     {
@@ -296,6 +316,9 @@ function Write-LogHeader (
     Write-LogMessage $message -LogFileName $LogFileName -WriteRawMessageOnly
 
     $message = "Running on {0} Server: {1}" -f $SelectedServerDetails.serverType, $SelectedServerDetails.serverName
+    Write-LogMessage $message -LogFileName $LogFileName -WriteRawMessageOnly
+
+    $message = "Results logged to: {0}" -f $LogFileName
     Write-LogMessage $message -LogFileName $LogFileName -WriteRawMessageOnly
 
     Write-LogMessage $horizontalLine -LogFileName $LogFileName -WriteRawMessageOnly
@@ -398,6 +421,7 @@ function Get-SqlResult
     [CmdletBinding()]
     Param
     (
+        [AllowNull()]
         [Parameter(Position=1,
                     Mandatory=$True,
                     ValueFromPipeline=$True)]
@@ -431,17 +455,12 @@ function Get-SqlResult
                     -LogFileName $LogFileName -IsErrorMessage
             }
             
-            if ($errorRecord.Exception)
+            if ($errorRecord.Exception -and $errorRecord.Exception.Message)
             {
-                if ($errorRecord.Exception.Message)
-                {
-                    # It seems like a single exception may include multiple errors in the 
-                    # exception message, one error per line.  Align the errors on different 
-                    # lines under the first error.
-                    $message = $errorRecord.Exception.Message `
-                        -replace "`r`n", ("`r`n{0}" -f (" " * 50))
-                    Write-LogMessage $message -LogFileName $LogFileName -IsErrorMessage
-                }
+                # It seems like a single exception may include multiple errors in the 
+                # exception message, one error per line.  Flatten to a single line.
+                $message = $errorRecord.Exception.Message -replace "`r`n", ""
+                Write-LogMessage $message -LogFileName $LogFileName -IsErrorMessage
             }
         }
         elseif ($VerboseLoggingOn `
@@ -562,14 +581,14 @@ function Invoke-Sql
 
         try
         {
-            # TODO: Get ServerType variable working.  Currently throws an error if the SQL 
-            # script contains a sqlcmd variable $(ServerType).
+            # Pass sqlcmd variable $(ServerType), set to the serverType selected by the user, 
+            # into the SQL script or command.
             $serverType = $SelectedServerDetails.serverType
-            $serverTypeVariableDefinition = @("ServerType = '$serverType'")
+            $serverTypeVariableDefinition = @{ServerType=$serverType}
             # *>&1 means all streams (eg Verbose, Error) are merged into pipeline output.
             $result.output = (Invoke-Sqlcmd -ServerInstance $SelectedServerDetails.serverName `
                 -Database $DefaultDatabase -Variable $serverTypeVariableDefinition `
-                -OutputSqlErrors $True -Verbose @optionalParameters) *>&1
+                -OutputSqlErrors $True -Verbose -IncludeSqlUserErrors @optionalParameters) *>&1
 
             $result.wasSuccessful = ($result.output `
             | Get-SqlResult -VerboseLoggingOn:$VerboseLoggingOn -LogFileName $LogFileName)
