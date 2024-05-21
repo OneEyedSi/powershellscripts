@@ -13,11 +13,13 @@ file, which can be kept as a record of the results of a deployment.
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1 or greater
-                sqlcmd, the SQL Server Commandline Utility, which needs to be on the Windows PATH.
-                SqlServer PowerShell module (install from PowerShell Gallery, not installed as 
-                                            part of SQL Server)
-Version:		1.3.0
-Date:			2 Dec 2023
+                sqlcmd.exe, the SQL Server Commandline Utility, which needs to be on the Windows PATH.
+                PowerShell modules:
+                    (these will be installed automatically if not already installed)
+                    - SqlServer
+                    - Pslogg (logging module)
+Version:		2.0.0
+Date:			4 Dec 2023
 
 When listing the SQL script file names, the file extensions are optional.  So a SQL script file 
 name could be either like "script_name.sql" or simply "script_name".
@@ -95,55 +97,182 @@ $_sqlScriptNames = @(
 [System.Object[]]$_sqlServers = @(
                                     @{
                                         key="L"; 
-                                        serverName="(localdb)\mssqllocaldb"; 
-                                        useWindowsAuthentication=$True; 
+                                        connectionString="Server=(localdb)\mssqllocaldb;Database=Test;Trusted_Connection=yes;";
                                         serverType="LOCALDB"; 
                                         menuText="(L)ocaldb"
                                     },
                                     @{
                                         key="D"; 
-                                        serverName="DEV.DEV.LOCAL"; 
-                                        useWindowsAuthentication=$True; 
+                                        connectionString="Server=DEV.DEV.LOCAL;Database=Test;Trusted_Connection=yes;";
                                         serverType="DEV"; 
                                         menuText="(D)ev"
                                     },
                                     @{
                                         key="T"; 
-                                        serverName="TEST.DEV.LOCAL"; 
-                                        useWindowsAuthentication=$True; 
+                                        connectionString="Server=TEST.DEV.LOCAL;Database=Test;Trusted_Connection=yes;";
                                         serverType="TEST"; 
                                         menuText="(T)est"
                                     },
                                     @{
                                         key="U"; 
-                                        serverName="SQLTEST01.sit.local"; 
-                                        userName="SitUser"; 
-                                        password="qawsedrftg"; 
+                                        connectionString="Server=SQLTEST01.sit.local;Database=Test;User ID=SitUser;Password=qawsedrftg;";
                                         serverType="UAT"; 
                                         menuText="(U)AT"
                                     },
                                     @{
                                         key="P"; 
-                                        serverName="SQLPROD01.prod.local"; 
-                                        userName="ProductionUser"; 
-                                        password="Password1"; 
+                                        connectionString="Server=SQLPROD01.prod.local;Database=ProdDB;User ID=ProductionUser;Password=Password1;";
                                         serverType="LIVE"; 
                                         menuText="(P)roduction"
                                     }
                                 )
 
-# To run a script in a database other than the default database, include a USE <db name> statement 
-# in the script.
-$_defaultDatabase = "Test"
-
-# The log file will be created in the same folder as this script.
-$_logFileName = "release.log"
-# If set overwrites any existing log file.  If cleared appends to an existing log file.  If 
-# no log file exists a new one will be created, regardless of the setting of this variable.
+# The log file will be created in the same folder as this script.  It will have the run date 
+# automatically appended to the file name.  For example, "release_20231203.log"
+$_logFileNameBaseName = "release.log"
+# If set overwrites the log file for the current date, if it exists.  If cleared appends to that  
+# existing file.  If no log file exists for the current date a new one will be created, regardless 
+# of the setting of this variable.
+# NOTE: After initially overwriting a log file, all subsequent log messages written to the same 
+# file in the same PowerShell session will be appended to the file.
 $_overwriteLogFile = $True 
-$_verboseLoggingOn = $True
+
+$_sqlVerboseLoggingOn = $True
+
+$_requiredModules = @('SqlServer', 'PsLogg')
+$_moduleRepository = 'PSGallery'
+$_proxyServerUrl = ''
 
 #endregion Configuration **************************************************************************
+
+<#
+.SYNOPSIS
+Checks whether the specified module is already installed and installs it if it isn't.
+
+.DESCRIPTION
+If the specified module is not already installed the function will attempt to install it 
+assuming it has direct access to the repository.  If that fails it will attempt to install the 
+module via a proxy server.
+
+If this function installs a module it will be installed for the current user only, not for all 
+users of the computer.
+
+.NOTES
+Cannot include logging in this function because it will be used to install the logging module 
+if it's not already installed.
+#>
+function Install-RequiredModule (
+    [string]$ModuleName,
+    [string]$RepositoryName,
+    [string]$ProxyUrl
+    )
+{
+    Write-Output "    Checking whether PowerShell module '$ModuleName' is installed..."
+
+    # "Get-InstalledModule -Name <module name>" will throw a non-terminating error if the module 
+    # is not installed.  Don't want to display the error so silently continue.
+    if (Get-InstalledModule -Name $ModuleName `
+        -ErrorAction SilentlyContinue -WarningAction SilentlyContinue)
+    {
+        Write-Output "    Module '$ModuleName' is installed."
+        return
+    }
+    
+    Write-Output "    Installing PowerShell module '$ModuleName'..."
+
+    # Repository probably has too many modules to enumerate them all to find the name.  So call 
+    # "Find-Module -Repository $RepositoryName -Name $ModuleName" which will raise a 
+    # non-terminating error if the module isn't found.
+
+    # Silently continue on error because the error message isn't user friendly.  We'll display 
+    # our own error message if needed.
+    if ((Find-Module -Repository $RepositoryName -Name $ModuleName `
+        -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).Count -eq 0)
+    {
+        throw "Module '$ModuleName' not found in repository '$RepositoryName'.  Exiting."
+    }
+
+    try
+    {
+        # Ensure the repository is trusted otherwise the user will get an "untrusted repository"
+        # warning message.
+        $repositoryInstallationPolicy = (Get-PSRepository -Name $RepositoryName |
+                                            Select-Object -ExpandProperty InstallationPolicy)
+        if ($repositoryInstallationPolicy -ne 'Trusted')
+        {
+            Set-PSRepository -Name $RepositoryName -InstallationPolicy Trusted
+        }
+    }
+    catch 
+    {
+        throw "Module repository '$RepositoryName' not found.  Exiting."
+    }
+    
+    try
+    {        
+        # If Install-Module fails because it's behind a proxy we want to fail silently, without 
+        # displaying any message to scare the user.  
+        # Errors from Install-Module are non-terminating.  They won't be caught using try - catch 
+        # unless ErrorAction is set to Stop. 
+        Install-Module -Name $ModuleName -Repository $RepositoryName `
+            -Scope CurrentUser -ErrorAction Stop -WarningAction SilentlyContinue
+    }
+    catch 
+    {
+        # Try again, this time with proxy details, if we have them.
+
+        if ([string]::IsNullOrWhiteSpace($ProxyUrl))
+        {
+            throw "Unable to install module '$ModuleName' directly and no proxy server details supplied.  Exiting."
+        }
+
+        $proxyCredential = Get-Credential -Message 'Please enter credentials for proxy server'
+
+        # No need to Silently Continue this time.  We want to see the error details.  Convert 
+        # non-terminating errors to terminating via ErrorAction Stop.   
+        Install-Module -Name $ModuleName -Repository $RepositoryName `
+            -Proxy $ProxyUrl -ProxyCredential $proxyCredential `
+            -Scope CurrentUser -ErrorAction Stop
+    }
+
+    if (-not (Get-InstalledModule -Name $ModuleName -ErrorAction SilentlyContinue))
+    {
+        throw "Unknown error installing module '$ModuleName' from repository '$RepositoryName'.  Exiting."
+    }
+
+    Write-Output "    Module '$ModuleName' successfully installed."
+}
+
+<#
+.SYNOPSIS
+Sets up the Pslogg logging module to write to the PowerShell host and to a log file.
+
+.DESCRIPTION
+
+.NOTES
+#>
+function Initialize-Logger (
+    [string]$LogFileName,
+    [switch]$OverwriteLogFile
+    )
+{
+    $fileNameIsValid = Test-Path $LogFileName -IsValid
+
+    if (-not $fileNameIsValid)
+    {
+        $message = "'$LogFileName' is not a valid file name." `
+            + "  Please correct the file name and try again.  Exiting."
+        throw $message
+    }
+
+    Set-LogConfiguration -LogLevel VERBOSE -WriteToHost
+    Set-LogConfiguration -LogFileName $_logFileNameBaseName -ExcludeDateFromFileName:$False `
+        -EnableFileLoggingFromScript -OverwriteLogFile:$OverwriteLogFile
+    Set-LogConfiguration -CategoryInfoItem 'Success', @{ Color = 'Green' }
+    Set-LogConfiguration -CategoryInfoItem 'Failure', @{ Color = 'Red' }
+    Set-LogConfiguration -CategoryInfoItem 'Result', @{ Color = 'Cyan' }
+    Set-LogConfiguration -MessageFormat '{TimeStamp} | {CallerName} | {MessageLevel} | {Message}'
+}
 
 <#
 .SYNOPSIS
@@ -175,120 +304,24 @@ function Get-AbsolutePath (
 
 <#
 .SYNOPSIS
-Writes a message to the host and, optionally, to a log file.
+Logs the raw log message, without any other fields like a timestamp.
 
 .DESCRIPTION
-Writes a string in the form of a log message: 
-{datetime} | {calling function name} | {message}
+Logs the raw log message, without any other fields like a timestamp.
 
 .NOTES
-{calling function name} will be "----" if the function is 
-called from outside any other function, at the top level of 
-the script.
 #>
-function Write-LogMessage (
+function Write-RawLogMessage (
     [Parameter(Mandatory=$True)]
-    [AllowEmptyString()]
-    [string]$Message,
-
-    [Parameter(Mandatory=$False)]
-    [string]$ConsoleTextColor,
-
-    [Parameter(Mandatory=$False)]
-    [string]$LogFileName,
-
-    [Parameter(Mandatory=$False)]
-    [switch]$WriteRawMessageOnly,
-
-    [Parameter(Mandatory=$False)]
-    [switch]$IsErrorMessage,
-
-    [Parameter(Mandatory=$False)]
-    [switch]$OverwriteLogFile
+    [string]$Message
     )
 {
-    $timeText = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss.fff")
-    $callingFunctionName = (Get-Variable MyInvocation -Scope 1).Value.MyCommand.Name
-
-    if (!$callingFunctionName)
-    {
-        $callingFunctionName = "----"
-    }
-    
-    $errorText = ""
-
-    if ($Message)
-    {
-        if ($IsErrorMessage)
-        {
-            $errorText = "ERROR: "
-        }
-        $outputMessage = "{0} | {1} | {2}{3}" -f $timeText, $callingFunctionName, $errorText, $Message
-    }
-    else
-    { 
-        if ($IsErrorMessage)
-        {
-            $errorText = " ERROR"
-        }
-        $outputMessage = "{0} |{1}" -f $timeText, $errorText
-    }
-        
-    if ($WriteRawMessageOnly)
-    {
-        $outputMessage = $Message
-        if (-not $outputMessage)
-        {
-            $outputMessage = " "
-        }
-    }
-
-    if ($IsErrorMessage)
-    {
-        # Don't write to Error stream, it will mess up the formatting of the lines.
-        # Instead just write text in red.
-        Write-Host $outputMessage -ForegroundColor 'Red'
-    }
-    elseif ($ConsoleTextColor)
-    {
-        Write-Host $outputMessage -ForegroundColor $ConsoleTextColor
-    }
-    else
-    {
-        Write-Host $outputMessage
-    }
-
-    if (-not $LogFileName)
-    {
-        return
-    }
-
-    $LogFileName = $LogFileName.Trim()
-    if (-not $LogFileName)
-    {
-        return
-    }
-
-    if (-not (Test-Path $LogFileName -IsValid))
-    {
-        # Fail silently so that every message output to the console doesn't include an error 
-        # message.
-        return
-    }
-
-    if ($OverwriteLogFile -or -not (Test-Path $LogFileName))
-    {
-        $outputMessage | Set-Content $LogFileName
-    }
-    else
-    {
-        $outputMessage | Add-Content $LogFileName
-    }
+    Write-LogMessage -Message $Message -MessageFormat '{Message}'
 }
 
 <#
 .SYNOPSIS
-Writes a heading to the host and, optionally, to a log file.
+Writes a heading to the host and to the log file.
 
 .DESCRIPTION
 Writes a heading that makes it obvious this is the start of a deployment.
@@ -298,30 +331,36 @@ Useful for repeated deployments, which may be written to the same log file.
 #>
 function Write-LogHeader (
     [Parameter(Mandatory=$True)]
-    $SelectedServerDetails, 
+    $SelectedServerDetails,
 
     [Parameter(Mandatory=$False)]
-    [string]$LogFileName,
-
-    [Parameter(Mandatory=$False)]
-    [switch]$OverwriteLogFile
+    [string]$LogFileName
     )
 {
     $horizontalLine = "======================================================="
-    Write-LogMessage $horizontalLine -LogFileName $LogFileName -WriteRawMessageOnly `
-        -OverwriteLogFile:$OverwriteLogFile
+    Write-RawLogMessage $horizontalLine
 
     $dateText = (Get-Date).ToString("yyyy-MM-dd")
     $message = "Scripts run date: {0}" -f $dateText
-    Write-LogMessage $message -LogFileName $LogFileName -WriteRawMessageOnly
+    Write-RawLogMessage $message
 
-    $message = "Running on {0} Server: {1}" -f $SelectedServerDetails.serverType, $SelectedServerDetails.serverName
-    Write-LogMessage $message -LogFileName $LogFileName -WriteRawMessageOnly
+    $message = "Running on $($SelectedServerDetails.serverType) Server: $($SelectedServerDetails.serverName)"
+    Write-RawLogMessage $message
 
-    $message = "Results logged to: {0}" -f $LogFileName
-    Write-LogMessage $message -LogFileName $LogFileName -WriteRawMessageOnly
+    $message = "Default database to run scripts against: $($SelectedServerDetails.databaseName)"
+    Write-RawLogMessage $message
 
-    Write-LogMessage $horizontalLine -LogFileName $LogFileName -WriteRawMessageOnly
+    $loggerConfiguration = Get-LogConfiguration
+    if ($loggerConfiguration `
+        -and $loggerConfiguration.LogFile `
+        -and $loggerConfiguration.LogFile.WriteFromScript `
+        -and $loggerConfiguration.LogFile.Name)
+    {
+        $message = "Results logged to: $($loggerConfiguration.LogFile.FullPathReadOnly)"
+        Write-RawLogMessage $message
+    }
+
+    Write-RawLogMessage $horizontalLine
 }
 
 <#
@@ -337,10 +376,7 @@ function will loop repeatedly until the user enters a valid letter.
 #>
 function Get-UserSelection (
     [Parameter(Mandatory=$True)]
-    $SqlServers,
-
-    [Parameter(Mandatory=$False)]
-    [string]$LogFileName
+    $SqlServers
     )
 {
     Write-Host "Select the server to run the SQL scripts on (type a letter followed by the [Enter] key, or press CTRL+C to exit)"
@@ -380,6 +416,87 @@ function Get-UserSelection (
 
 <#
 .SYNOPSIS
+Converts a connection string into a hashtable of key-value pairs.
+
+.DESCRIPTION
+Splits the connection string on the separator character then splits each part again into 
+key and value, and adds them to a hashtable.
+
+.NOTES
+#>
+function Convert-ConnectionStringToHashtable (
+    [Parameter(Mandatory=$True)]
+    [string[]]$ConnectionString
+    )
+{
+    if ([string]::IsNullOrWhiteSpace($ConnectionString))
+    {
+        return $null
+    }
+
+    $connectionStringParts = $ConnectionString.Split(';')
+
+    $hashTable = @{}
+    foreach($part in $connectionStringParts)
+    {
+        $keyValuePair = $part.Split('=')
+        if ($keyValuePair.Length -eq 2)
+        {
+            $key = $keyValuePair[0]
+            $value = $keyValuePair[1]
+            $hashTable[$key] = $value
+        }
+    }
+
+    return $hashTable
+}
+
+<#
+.SYNOPSIS
+Reads a value from a hashtable.
+
+.DESCRIPTION
+While this function can read a value from any hashtable it is designed to read a value from a 
+hashtable converted from a SQL Server connection string.  SQL Server connection strings can have 
+multiple alternative keys for the same property.  For example, "User", "User ID", or "UID" for the 
+SQL Server login name.  So the function has to take an array of possible key names, rather than a 
+single key name, to extract from the connection string.  The function will return the value for 
+the first of the possible keys it encounters in the hashtable.
+
+.NOTES
+ASSUMPTION: That all values in the hashtable are strings.
+#>
+function Read-HashtableValue (
+    [Parameter(Mandatory=$True)]
+    [hashtable]$Hashtable,
+    
+    [Parameter(Mandatory=$True)]
+    [string[]]$PossibleKeyNames
+    )
+{
+    if ($Hashtable -eq $null -or $Hashtable.Count -eq 0)
+    {
+        return $null
+    }
+    if (-not $PossibleKeyNames)
+    {
+        return $null
+    }
+
+    foreach($key in $PossibleKeyNames)
+    {
+        $value = $Hashtable[$key]
+        if (-not [string]::IsNullOrWhiteSpace($value))
+        {
+            return $value
+        }
+    }
+
+    return $null
+}
+
+<#
+.SYNOPSIS
 Gets the details of the SQL Server the user wishes to deploy to.
 
 .DESCRIPTION
@@ -387,6 +504,8 @@ Gets the details of the SQL Server the user wishes to deploy to.  The details in
 SQL Server instance name and the credentials needed to connect to the server.
 
 .NOTES
+The lists of possible key names come from "SqlConnection.ConnectionString Property", 
+https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlconnection.connectionstring
 #>
 function Get-ServerDetails (
     [Parameter(Mandatory=$True)]
@@ -394,13 +513,81 @@ function Get-ServerDetails (
     
     [Parameter(Mandatory=$True)]
     [ValidateNotNullOrEmpty()]
-    [string]$UserSelection,
-
-    [Parameter(Mandatory=$False)]
-    [string]$LogFileName
+    [string]$UserSelection
     )
 {
-    $selectedServerDetails = $SqlServers.Where({$_.key -eq $UserSelection})
+    $selectedServerDetails = $SqlServers | Where-Object{$_.key -eq $UserSelection}
+
+    # This should never happen as Get-UserSelection should ensure the user chooses a valid 
+    # selection.  But it can't hurt to be careful.
+    if (-not $selectedServerDetails)
+    {
+        $message = "No server details found for user selection '$UserSelection'."
+        Write-LogMessage $message -IsError
+        return $null
+    }
+
+    if (-not $SelectedServerDetails.ContainsKey("serverType"))
+    {
+        $message = "Selected server '$UserSelection' has no connection string specified."
+        Write-LogMessage $message -IsError
+        return $False
+    }
+
+    if (-not $selectedServerDetails.ContainsKey('connectionString'))
+    {
+        $message = "Selected server '$UserSelection' has no connection string specified."
+        Write-LogMessage $message -IsError
+        return $null
+    }
+
+    $connectionDetails = Convert-ConnectionStringToHashtable -ConnectionString $selectedServerDetails.connectionString
+
+    if (-not $connectionDetails)
+    {
+        $message = "Unable to parse connection string for selected server '$UserSelection'."
+        Write-LogMessage $message -IsError
+        return $null
+    }
+
+    $serverName = Read-HashtableValue -Hashtable $connectionDetails `
+        -PossibleKeyNames 'Data Source','Server','Address','Addr','Network Address'
+
+    if (-not $serverName)
+    {
+        $message = "Server name not found in connection string for selected server '$UserSelection'."
+        Write-LogMessage $message -IsError
+        return $null
+    }
+
+    $selectedServerDetails.serverName = $serverName
+
+    $databaseName = Read-HashtableValue -Hashtable $connectionDetails `
+        -PossibleKeyNames 'Initial Catalog','Database'
+
+    if (-not $databaseName)
+    {
+        $message = "Database name not found in connection string for selected server '$UserSelection'."
+        Write-LogMessage $message -IsError
+        return $null
+    }
+
+    $selectedServerDetails.databaseName = $databaseName
+
+    $trustedConnection = Read-HashtableValue -Hashtable $connectionDetails `
+        -PossibleKeyNames 'Integrated Security','Trusted_Connection'
+
+    $SelectedServerDetails.useWindowsAuthentication =  `
+        ($trustedConnection -and $trustedConnection -in  @('true', 'yes', 'sspi'))
+
+    if (-not $SelectedServerDetails.useWindowsAuthentication)
+    {
+        $SelectedServerDetails.userName = Read-HashtableValue -Hashtable $connectionDetails `
+            -PossibleKeyNames 'User ID','UID','User'
+            
+        $SelectedServerDetails.password = Read-HashtableValue -Hashtable $connectionDetails `
+        -PossibleKeyNames 'Password','PWD'
+    }
 
     return $selectedServerDetails
 }
@@ -427,13 +614,11 @@ function Get-SqlResult
                     ValueFromPipeline=$True)]
         $sqlResult,
 
-        [Parameter(Position=2,
-                    Mandatory=$False)]
-        [switch]$VerboseLoggingOn,
+        [Parameter(Mandatory=$False)]
+        [switch]$SqlVerboseLoggingOn,
 
-        [Parameter(Position=3,
-                    Mandatory=$False)]
-        [string]$LogFileName
+        [Parameter(Mandatory=$False)]
+        [switch]$ExpectNonNullResult
     )
 
     begin
@@ -443,7 +628,11 @@ function Get-SqlResult
 
     process
     {
-        if ($sqlResult -is [System.Management.Automation.ErrorRecord])
+        if ($ExpectNonNullResult -and $sqlResult -eq $null)
+        {
+            $wasSuccessful = $false
+        }
+        elseif ($sqlResult -is [System.Management.Automation.ErrorRecord])
         {
             $wasSuccessful = $False
 
@@ -451,8 +640,7 @@ function Get-SqlResult
 
             if ($errorRecord.ErrorDetails -and $errorRecord.ErrorDetails.Message)
             {
-                Write-LogMessage $errorRecord.ErrorDetails.Message `
-                    -LogFileName $LogFileName -IsErrorMessage
+                Write-LogMessage $errorRecord.ErrorDetails.Message -IsError
             }
             
             if ($errorRecord.Exception -and $errorRecord.Exception.Message)
@@ -460,10 +648,10 @@ function Get-SqlResult
                 # It seems like a single exception may include multiple errors in the 
                 # exception message, one error per line.  Flatten to a single line.
                 $message = $errorRecord.Exception.Message -replace "`r`n", ""
-                Write-LogMessage $message -LogFileName $LogFileName -IsErrorMessage
+                Write-LogMessage $message -IsError
             }
         }
-        elseif ($VerboseLoggingOn `
+        elseif ($SqlVerboseLoggingOn `
         -and $sqlResult -is [System.Management.Automation.InformationalRecord])
         {
             # InformationalRecord can be a DebugRecord, a VerboseRecord or a WarningRecord.
@@ -479,7 +667,7 @@ function Get-SqlResult
                     $recordType = "Verbose"
                 }
                 $message = "{0}: {1}" -f $recordType, $infoRecord.Message
-                Write-LogMessage $message -LogFileName $LogFileName 
+                Write-LogMessage $message 
             }
         }
     }
@@ -511,47 +699,37 @@ function Invoke-Sql
         $SelectedServerDetails, 
 
         [Parameter(Position=2,
-                    Mandatory=$True)]
-        [string]$DefaultDatabase,
+                    Mandatory=$False)]
+        [switch]$SqlVerboseLoggingOn, 
 
         [Parameter(Position=3,
-                    Mandatory=$False)]
-        [string]$LogFileName,
-
-        [Parameter(Position=4,
-                    Mandatory=$False)]
-        [switch]$VerboseLoggingOn, 
-
-        [Parameter(Position=5,
                     Mandatory=$False,
                     ValueFromPipelineByPropertyName=$True)]
         [string]$SqlScriptFileName, 
 
-        [Parameter(Position=5,
+        [Parameter(Position=4,
                     Mandatory=$False,
                     ValueFromPipelineByPropertyName=$True)]
-        [string]$SqlQuery
+        [string]$SqlQuery,
+
+        [Parameter(Mandatory=$False)]
+        [switch]$ExpectNonNullResult,
+
+        [Parameter(Mandatory=$False)]
+        [switch]$SuppressErrorLogging
     )
 
     process
     {
         $result = @{wasSuccessful=$False; output=$null}
 
-        $optionalParameters = @{}
-        if ((-not $SelectedServerDetails.ContainsKey("useWindowsAuthentication")) `
-        -or (-not $SelectedServerDetails.useWindowsAuthentication))
-        {
-            $optionalParameters = @{UserName=$SelectedServerDetails.userName; `
-                                    Password=$SelectedServerDetails.password}
-        }
-
         if (-not $SqlScriptFileName -and -not $SqlQuery)
         {
-            Write-LogMessage "Neither SQL script file nor SQL query supplied." `
-                -LogFileName $LogFileName -IsErrorMessage
+            Write-LogMessage "Neither SQL script file nor SQL query supplied." -IsError
             return $result
         }
 
+        $optionalParameters = @{}
         $commandType = ""
         $command = ""
         if ($SqlScriptFileName)
@@ -576,8 +754,24 @@ function Invoke-Sql
             $command = $SqlQuery
         }
 
-        $message = "Executing SQL {0} `"{1}`"..." -f $commandType, $command
-        Write-LogMessage $message -LogFileName $LogFileName
+        if ($SelectedServerDetails.useExplicitConnectionDetails)
+        {
+            $optionalParameters.ServerInstance = $SelectedServerDetails.serverName
+            $optionalParameters.Database = $SelectedServerDetails.databaseName
+
+            if (-not $SelectedServerDetails.useWindowsAuthentication)
+            {
+                $optionalParameters.UserName = $SelectedServerDetails.userName
+                $optionalParameters.Password = $SelectedServerDetails.password
+            }
+        }
+        else 
+        {
+            $optionalParameters.ConnectionString = $SelectedServerDetails.connectionString
+        }
+
+        $message = "Executing SQL $commandType `"$command`"..."
+        Write-LogMessage $message
 
         try
         {
@@ -586,30 +780,37 @@ function Invoke-Sql
             $serverType = $SelectedServerDetails.serverType
             $serverTypeVariableDefinition = @{ServerType=$serverType}
             # *>&1 means all streams (eg Verbose, Error) are merged into pipeline output.
-            $result.output = (Invoke-Sqlcmd -ServerInstance $SelectedServerDetails.serverName `
-                -Database $DefaultDatabase -Variable $serverTypeVariableDefinition `
-                -OutputSqlErrors $True -Verbose -IncludeSqlUserErrors @optionalParameters) *>&1
+            # Note splatting operator on @optionalParameters.
+            # -ErrorAction Stop turns non-terminating errors into terminating errors that will 
+            # be caught by the catch block.
+            $result.output = (Invoke-Sqlcmd `
+                -Variable $serverTypeVariableDefinition `
+                -OutputSqlErrors $True -IncludeSqlUserErrors `
+                -Verbose @optionalParameters) *>&1
 
-            $result.wasSuccessful = ($result.output `
-            | Get-SqlResult -VerboseLoggingOn:$VerboseLoggingOn -LogFileName $LogFileName)
+            $result.wasSuccessful = ($result.output |
+                Get-SqlResult -SqlVerboseLoggingOn:$SqlVerboseLoggingOn -ExpectNonNullResult:$ExpectNonNullResult)
             
             if ($result.wasSuccessful)
             {
-                $message = "RESULT: SQL {0} executed successfully." -f $commandType
-                Write-LogMessage $message -LogFileName $LogFileName
+                $message = "RESULT: SQL $commandType executed successfully."
+                Write-LogMessage $message -Category Result
             }
             else
             {
-                $message = "RESULT: Error while executing SQL {0}." -f $commandType
-                Write-LogMessage $message -LogFileName $LogFileName
+                $message = "RESULT: Error or unexpected result while executing SQL $commandType."
+                Write-LogMessage $message -IsError
             }         
 
             return $result
         }
         catch
         {
-            $message = "{0} - {1}" -f $_.Exception.GetType().Name, $_.Exception.Message
-            Write-LogMessage $message -LogFileName $LogFileName -IsErrorMessage
+            if (-not $SuppressErrorLogging)
+            {
+                $message = "{0} - {1}" -f $_.Exception.GetType().Name, $_.Exception.Message
+                Write-LogMessage $message -IsError
+            }
 
             $result.wasSuccessful = $False
             return $result
@@ -619,129 +820,97 @@ function Invoke-Sql
 
 <#
 .SYNOPSIS
-Checks that required server details have been supplied.
+Checks the connection to the SQL Server instance specified in the server details.
 
 .DESCRIPTION
 
 .NOTES
 #>
-function Test-ServerDetails (
+function Test-SqlServer (
     [Parameter(Mandatory=$True)]
-    $SelectedServerDetails, 
-    
-    [Parameter(Mandatory=$True)]
-    [ValidateNotNullOrEmpty()]
-    [string]$UserSelection, 
-
-    [Parameter(Mandatory=$False)]
-    [string]$LogFileName
+    $SelectedServerDetails
     )
 {
-    Write-LogMessage "Checking selected server details..." -LogFileName $LogFileName
+    $sqlServerName = $SelectedServerDetails.serverName
 
-    $message = $null
-
-    if (-not $SelectedServerDetails)
+    # Server name  should be checked by Get-ServerDetails but it can't hurt to be careful.
+    if ([string]::IsNullOrWhiteSpace($sqlServerName))
     {
-        $message = "No server details for user selection '{0}'" -f $UserSelection
-        Write-LogMessage $message -LogFileName $LogFileName -IsErrorMessage
-        return $False
-    }   
-
-    if (-not $SelectedServerDetails.ContainsKey("serverName"))
-    {
-        $message = "Server name missing for user selection '{0}'" -f $UserSelection
-        Write-LogMessage $message -LogFileName $LogFileName -IsErrorMessage
-        return $False
-    }   
-
-    if (-not $SelectedServerDetails.ContainsKey("serverType"))
-    {
-        $message = "Server type missing for user selection '{0}'" -f $UserSelection
-        Write-LogMessage $message -LogFileName $LogFileName -IsErrorMessage
-        return $False
+        $message = "SQL Server name not found for selected server '$UserSelection'."
+        Write-LogMessage $message -IsError
+        return $false
     }
 
-    if ((-not $SelectedServerDetails.ContainsKey("useWindowsAuthentication")) `
-    -or (-not $SelectedServerDetails.useWindowsAuthentication))
+    $message = "Checking the connection to SQL Server '$sqlServerName'..."
+    Write-LogMessage $message
+
+    $databaseName = $SelectedServerDetails.databaseName
+    $SelectedServerDetails.databaseName = 'master'
+    $SelectedServerDetails.useExplicitConnectionDetails = $true
+
+    $SqlQuery = "SELECT @@VERSION;"
+    $result = Invoke-Sql -SelectedServerDetails $SelectedServerDetails `
+        -SqlVerboseLoggingOn -SqlQuery $SqlQuery -ExpectNonNullResult -SuppressErrorLogging
+
+    $SelectedServerDetails.databaseName = $databaseName
+    $SelectedServerDetails.useExplicitConnectionDetails = $false
+
+    if (-not $result -or -not $result.wasSuccessful)
     {
-        if ((-not $SelectedServerDetails.ContainsKey("userName")) `
-        -or (-not $SelectedServerDetails.ContainsKey("password")))
-        {
-            $message = "userName and/or password not supplied for server {0}." `
-                -f $SelectedServerDetails.serverName
-            Write-LogMessage $message -LogFileName $LogFileName -IsErrorMessage
-            return $False
-        }
+        Write-LogMessage "RESULT: Connection to SQL Server failed." -IsError
+
+        return $False
     }    
 
-    if ($message)
-    {
-        Write-LogMessage $message -LogFileName $LogFileName -IsErrorMessage
-
-        Write-LogMessage "RESULT: Selected server details are not valid." -LogFileName $LogFileName
-
-        return $False
-    }
-
-    Write-LogMessage "RESULT: Selected server details okay." -LogFileName $LogFileName
+    Write-LogMessage "RESULT: Successfully connected to SQL Server." -Category Result
 
     return $True
 }
 
 <#
 .SYNOPSIS
-Checks that the default database exists on the selected SQL Server.
+Checks that the database specified in the server details exists on the selected SQL Server.
 
 .DESCRIPTION
 
 .NOTES
 #>
-function Test-DefaultDatabase (
+function Test-Database (
     [Parameter(Mandatory=$True)]
-    $SelectedServerDetails, 
-    
-    [Parameter(Mandatory=$True)]
-    [ValidateNotNullOrEmpty()]
-    [string]$DefaultDatabase,
-
-    [Parameter(Mandatory=$False)]
-    [switch]$VerboseLoggingOn, 
-
-    [Parameter(Mandatory=$False)]
-    [string]$LogFileName
+    $SelectedServerDetails
     )
 {
-    $message = "Checking the existence of default database '{0}' on SQL Server {1}..." `
-        -f $DefaultDatabase, $SelectedServerDetails.serverName
-    Write-LogMessage $message -LogFileName $LogFileName
+    $databaseName = $SelectedServerDetails.databaseName
+    $sqlServerName = $SelectedServerDetails.serverName
 
-    if (-not $DefaultDatabase -or -not $DefaultDatabase.Trim())
+    # Database name should be checked by Get-ServerDetails but it can't hurt to be careful.
+    if ([string]::IsNullOrWhiteSpace($databaseName))
     {
-        Write-LogMessage "No default database supplied." -LogFileName $LogFileName -IsErrorMessage
-
-        Write-LogMessage "RESULT: No default database supplied." -LogFileName $LogFileName
-
-        return $False
+        $message = "Database name not found for selected server '$UserSelection'."
+        Write-LogMessage $message -IsError
+        return $false
     }
+    $message = "Checking the existence of database '$databaseName' on SQL Server '$sqlServerName'..."
+    Write-LogMessage $message
 
-    $SqlQuery = "SELECT name FROM sys.databases WHERE name = '{0}'" -f $DefaultDatabase
+    $SelectedServerDetails.databaseName = 'master'
+    $SelectedServerDetails.useExplicitConnectionDetails = $true
+
+    $SqlQuery = "SELECT name FROM sys.databases WHERE name = '$databaseName';"
     $result = Invoke-Sql -SelectedServerDetails $SelectedServerDetails `
-        -DefaultDatabase $DefaultDatabase -VerboseLoggingOn:$VerboseLoggingOn `
-        -SqlQuery $SqlQuery -LogFileName $LogFileName
+        -SqlVerboseLoggingOn -SqlQuery $SqlQuery -ExpectNonNullResult
+
+    $SelectedServerDetails.databaseName = $databaseName
+    $SelectedServerDetails.useExplicitConnectionDetails = $false
 
     if (-not $result -or -not $result.wasSuccessful)
     {
-        $message = "Database {0} not found on SQL Server {1}" `
-            -f $DefaultDatabase, $SelectedServerDetails.serverName
-        Write-LogMessage $message -LogFileName $LogFileName -IsErrorMessage
-
-        Write-LogMessage "RESULT: Database not found." -LogFileName $LogFileName 
+        Write-LogMessage "RESULT: Database not found." -IsError
 
         return $False
     }    
 
-    Write-LogMessage "RESULT: Database found." -LogFileName $LogFileName
+    Write-LogMessage "RESULT: Database found." -Category Result
 
     return $True
 }
@@ -761,92 +930,79 @@ function Update-Database (
     $SqlServers,
 
     [Parameter(Mandatory=$True)]
-    [string]$DefaultDatabase,
-
-    [Parameter(Mandatory=$True)]
     [string[]]$SqlScriptNames,
 
     [Parameter(Mandatory=$False)]
-    [switch]$VerboseLoggingOn, 
+    [switch]$SqlVerboseLoggingOn,
 
     [Parameter(Mandatory=$False)]
-    [string]$LogFileName,
-
-    [Parameter(Mandatory=$False)]
-    [switch]$OverwriteLogFile
+    [string]$LogFileName
     )
 {
-    Clear-Host 
-
-    $LogFileName = Get-AbsolutePath $LogFileName
-
-    $fileNameIsValid = Test-Path $LogFileName -IsValid
-
-    if (-not $fileNameIsValid)
-    {
-        $message = "'$LogFileName' is not a valid file name." `
-            + "  Please correct the file name and try again."
-        Write-Error $message
-        return
-    }
-
     $userSelection = Get-UserSelection $SqlServers
     $selectedServerDetails =  Get-ServerDetails $SqlServers $userSelection
+
+    if (-not $selectedServerDetails)
+    {
+        return
+    }
     
-    Write-LogHeader -SelectedServerDetails $selectedServerDetails -LogFileName $LogFileName `
-        -OverwriteLogFile:$OverwriteLogFile
+    Write-LogHeader -SelectedServerDetails $selectedServerDetails -LogFileName $LogFileName
 
     $startTime = Get-Date
 
-    $serverDetailsOk = Test-ServerDetails -SelectedServerDetails $selectedServerDetails `
-        -UserSelection $userSelection -LogFileName $LogFileName
+    $canConnectToSqlServer = Test-SqlServer -SelectedServerDetails $selectedServerDetails
 
-    if (-not $serverDetailsOk)
+    if (-not $canConnectToSqlServer)
     {
         return
     }
 
-    $defaultDatabaseExists = Test-DefaultDatabase -SelectedServerDetails $selectedServerDetails `
-        -DefaultDatabase $DefaultDatabase -VerboseLoggingOn:$VerboseLoggingOn `
-        -LogFileName $LogFileName
+    $defaultDatabaseExists = Test-Database -SelectedServerDetails $selectedServerDetails
 
     if (-not $defaultDatabaseExists)
     {
         return
     }
 
-    $message = "Executing SQL scripts on server {0}..." -f $selectedServerDetails.serverName
-    Write-LogMessage $message -LogFileName $LogFileName
+    $message = "Executing SQL scripts on server '$($selectedServerDetails.serverName)'..." 
+    Write-LogMessage $message 
 
     $allScriptsSuccessful = $True
-    $SqlScriptNames `
-    | Select-Object @{Name="sqlScriptFileName"; Expression={$_}} `
-    | Invoke-Sql -SelectedServerDetails $selectedServerDetails `
-                                -DefaultDatabase $DefaultDatabase `
-                                -VerboseLoggingOn:$VerboseLoggingOn `
-                                -LogFileName $LogFileName `
-    | ForEach-Object { if (-not $_.wasSuccessful) {$allScriptsSuccessful = $False} }
+    $SqlScriptNames |
+        Select-Object @{Name="SqlScriptFileName"; Expression={$_}} |
+        Invoke-Sql -SelectedServerDetails $selectedServerDetails `
+                        -SqlVerboseLoggingOn:$SqlVerboseLoggingOn |
+        ForEach-Object { if (-not $_.wasSuccessful) {$allScriptsSuccessful = $False} }
     
     $endTime = Get-Date
     $timeTaken = $endTime - $startTime    
     $message = "Finished running scripts.  Time taken: {0:hh\:mm\:ss\.fff} hh:mm:ss." -f $timeTaken
-    Write-LogMessage $message -LogFileName $LogFileName
+    Write-LogMessage $message 
 
-    $messageColor = "Green"
+    $resultCategory = 'Success'
     $message = "RESULT: No errors encountered."
     if (-not $allScriptsSuccessful)
     {
-        $messageColor = "Red"
+        $resultCategory = 'Failure'
         $message = "RESULT: ONE OR MORE ERRORS ENCOUNTERED.  For details search log messages above for the text `"ERROR:`"."
     }
-    Write-LogMessage $message -ConsoleTextColor $messageColor -LogFileName $LogFileName
+    Write-LogMessage $message -Category $resultCategory
 
-    Write-LogMessage "==============================" `
-        -LogFileName $LogFileName -WriteRawMessageOnly
-    Write-LogMessage " " -LogFileName $LogFileName -WriteRawMessageOnly
+    Write-RawLogMessage "==============================" 
+    Write-RawLogMessage " "
 }
 
+Clear-Host 
 
-Update-Database -SqlServers $_sqlServers -DefaultDatabase $_defaultDatabase `
-    -SqlScriptNames $_sqlScriptNames -VerboseLoggingOn:$_verboseLoggingOn `
-    -LogFileName $_logFileName -OverwriteLogFile:$_overwriteLogFile
+Write-Output 'Checking required PowerShell modules are installed:'
+foreach($module in $_requiredModules)
+{
+    Install-RequiredModule -ModuleName $module -RepositoryName $_moduleRepository -ProxyUrl $_proxyServerUrl
+}
+
+Initialize-Logger -LogFileName $_logFileNameBaseName -OverwriteLogFile:$_overwriteLogFile
+Write-Output ''
+
+Update-Database -SqlServers $_sqlServers -SqlScriptNames $_sqlScriptNames `
+    -SqlVerboseLoggingOn:$_sqlVerboseLoggingOn -LogFileName $_logFileNameBaseName
