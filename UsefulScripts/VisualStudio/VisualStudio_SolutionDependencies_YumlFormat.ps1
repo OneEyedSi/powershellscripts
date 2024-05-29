@@ -1,4 +1,29 @@
-﻿function GetAbsolutePath($path, $solutionFileFolderPath)
+﻿<#
+.SYNOPSIS
+Generates code for creating a graph of dependencies between projects in a Visual Studio solution.
+
+.DESCRIPTION
+Generates code for creating a dependency graph in https://yuml.me.  The graph will show the 
+dependencies between the projects in a Visual Studio solution.
+
+The layers in the dependency hierarchy can optionally be colour-coded.  This is useful for large 
+solutions to highlight top-level projects, without parents, and bottom-level projects, without 
+children.  Projects that share the same level in the hierarchy, counting from the top level 
+projects, will share the same colour.  For example, all top level projects will share the same 
+colour, then all children of those top level projects will share the same colour, etc.
+
+.NOTES
+Author:			Simon Elms
+Requires:		PowerShell 5.1
+Version:		1.0.0 
+Date:			2015
+
+For a generalised script for creating a Yuml.me dependency graph from arbitrary parent-child 
+pairs, see DemosAndExperiments/DEMO_Hierarchy_GetYumlCodeForDependencyGraph.ps1 in the 
+PowerShell repository.
+
+#>
+function GetAbsolutePath($path, $solutionFileFolderPath)
 {
     # Path is absolute if it's a named drive (eg starts with "C:\...") 
     # or is an UNC path (starts with "\\...").
