@@ -19,6 +19,8 @@ Slightly modified version of https://github.com/rnwood/smtp4dev/blob/master/send
 
 $numberEmailsToSend = 1
 $attachmentFilePath ="$PsScriptRoot/Lorem.txt"
+$smtpServerUrl = 'localhost'
+$smtpServerPort = 144
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -28,12 +30,12 @@ $attachmentFilePath ="$PsScriptRoot/Lorem.txt"
     return $true
 }
 
-
 1..$numberEmailsToSend | foreach-object { 
     $subject = "Message $_"
     write-host "Sending message with subject '$subject'..."
     Send-MailMessage -verbose `
-        -SmtpServer localhost `
+        -SmtpServer $smtpServerUrl `
+        -Port $smtpServerPort `
         -To 'foo2@bar.com' `
         -From 'from@from.com' `
         -Attachments $attachmentFilePath `
