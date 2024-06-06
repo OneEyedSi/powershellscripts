@@ -6,6 +6,11 @@ Generates code for creating a graph of dependencies between projects in a Visual
 Generates code for creating a dependency graph in https://yuml.me.  The graph will show the 
 dependencies between the projects in a Visual Studio solution.
 
+In addition to displaying projects, the dependency graph will include other dependencies, such as 
+DACPAC files referenced from SQL Server Database projects.  Nodes representing DACPAC files will 
+be labelled "filename (DACPAC)".  Nodes representing other files and artifacts will be labelled 
+"filename (ARTIFACT)".
+
 The layers in the dependency hierarchy can optionally be colour-coded.  This is useful for large 
 solutions to highlight top-level projects, without parents, and bottom-level projects, without 
 children.  Projects that share the same level in the hierarchy, counting from the top level 
@@ -20,30 +25,27 @@ understanding of the dependency graph.  In that case individual projects and the
 they belong to can be highlighted in colour, leaving the remaining projects coloured light grey.
 
 To highlight specific projects, add the project names to the list in script variable 
-$_projectNamesToHighlight.  Then set either $_highlightNodesAbove or $_highlightNodesBelow, or 
-both, $true.  When $_highlightNodesAbove is set the selected projects and all projects above them 
+$_projectNamesToHighlight.  Optionally you can set $_highlightNodesAbove or $_highlightNodesBelow 
+$true.  When $_highlightNodesAbove is set the selected projects and all projects above them 
 in the graph (parents, grandparents, etc) will be highlighted in colour.  When 
 $_highlightNodesBelow is set the selected projects and all projects below them 
-in the graph (children, grandchildren, etc) will be highlighted in colour.  
+in the graph (children, grandchildren, etc) will be highlighted in colour.  If neither 
+$_highlightNodesAbove nor $_highlightNodesBelow are set then only the projects listed in 
+$_projectNamesToHighlight will be highlighted in colour.
 
 When one of more projects are highlighted you can remove clutter by setting script variable 
 $_showOnlyHighlightedNodes $true.  In that case all non-highlighted projects are removed from the 
-graph, leaving only the highlighted projects and the projects above and/or below them.
+graph, leaving only the highlighted projects.
 
 If projects have been selected for highlighting then script variable $_useColours is ignored: Only 
-the projects listed in $_projectNamesToHighlight and the projects above or below them in the graph 
-will be highlighted.
-
-In addition to displaying projects, the dependency graph will include other dependencies, such as 
-DACPAC files referenced from SQL Server Database projects.  Nodes representing DACPAC files will 
-be labelled "filename (DACPAC)".  Nodes representing other files and artifacts will be labelled 
-"filename (ARTIFACT)".
+the projects listed in $_projectNamesToHighlight will be highlighted, along with the projects 
+above or below them in the graph if either $_highlightNodesAbove or $_highlightNodesBelow are set.
 
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
-Version:		2.0.0 
-Date:			5 June 2024
+Version:		2.1.0 
+Date:			6 June 2024
 
 For a generalised script for creating a Yuml.me dependency graph from arbitrary parent-child 
 pairs, see DemosAndExperiments/DEMO_Hierarchy_GetYumlCodeForDependencyGraph.ps1 in the 
@@ -54,12 +56,10 @@ PowerShell repository.
 $_solutionFilePath = "C:\Working\SourceControl\Test.sln"
 
 $_projectNamesToHighlight = @(
-                                'Main.Data'
-                                'TaskFunction'
-                            )                            
+)                            
 $_highlightNodesAbove = $true
 $_highlightNodesBelow = $true
-$_showOnlyHighlightedNodes = $true
+$_showOnlyHighlightedNodes = $false
 
 # Ignored if _projectNamesToHighlight set.
 $_useColours = $true
@@ -73,16 +73,16 @@ $_useColours = $true
 Returns an absolute path from a path that is either absolute or relative, plus a folder path.
 #>
 function PipelineGetAbsolutePath
-    (           
-        [Parameter(Position=0, 
-            Mandatory=$true)]
-        $FolderPath, 
+(           
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
+    $FolderPath, 
         
-        [Parameter(Position=1, 
-            Mandatory=$true, 
-            ValueFromPipeline=$true)]
-        $Path
-    )
+    [Parameter(Position = 1, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
+    $Path
+)
 {
     begin
     {
@@ -114,21 +114,21 @@ function PipelineGetAbsolutePath
 }
 
 function NewProjectInfo
-    (   
-        [Parameter(Position=0, 
-            Mandatory=$true)]
-        $ProjectName,        
+(   
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
+    $ProjectName,        
         
-        [Parameter(Position=1, 
-            Mandatory=$true)]
-        $ProjectFilePath,          
+    [Parameter(Position = 1, 
+        Mandatory = $true)]
+    $ProjectFilePath,          
         
-        [Parameter(Position=2, 
-            Mandatory=$false)]
-        $ProjectId     
-    )
+    [Parameter(Position = 2, 
+        Mandatory = $false)]
+    $ProjectId     
+)
 {
-    $projectInfo = @{name=$ProjectName; filePath=$ProjectFilePath; hierarchyLevel=$null; isHighlighted=$false}
+    $projectInfo = @{name = $ProjectName; filePath = $ProjectFilePath; hierarchyLevel = $null; isHighlighted = $false }
     if ($ProjectId)
     {
         $projectInfo.id = $ProjectId
@@ -160,16 +160,16 @@ solutions - see comments under function PipelineGetProjectDependencies).  Also .
 references don't include GUIDs, just the project file paths.
 #>
 function PipelineGetProjectInfoFromSolutionFile
-    (    
-    [Parameter(Position=0, 
-        Mandatory=$true)]
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
     $SolutionFileFolderPath,
     
-    [Parameter(Position=1, 
-        Mandatory=$true, 
-        ValueFromPipeline=$true)]
+    [Parameter(Position = 1, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
     $SolutionFileProjectLine
-    )
+)
 {
     begin 
     {
@@ -229,16 +229,16 @@ function GetAllProjectInfo($SolutionFilePath)
 }
 
 function PipelineGetProjectInfoById 
-    (
-        [Parameter(Position=0, 
-            Mandatory=$true)]
-        $AllProjectInfo,
+(
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
+    $AllProjectInfo,
         
-        [Parameter(Position=1, 
-            Mandatory=$true, 
-            ValueFromPipeline=$true)]
-        $ProjectId
-    )
+    [Parameter(Position = 1, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
+    $ProjectId
+)
 {
     begin
     {
@@ -259,13 +259,13 @@ function PipelineGetProjectInfoById
 
 function PipelineGetProjectInfoByName  
 (
-    [Parameter(Position=0, 
-        Mandatory=$true)]
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
     $AllProjectInfo,
     
-    [Parameter(Position=1, 
-        Mandatory=$true, 
-        ValueFromPipeline=$true)]
+    [Parameter(Position = 1, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
     $ProjectName
 )
 {
@@ -292,16 +292,16 @@ function GetProjectInfoByPath ($AllProjectInfo, $ProjectFilePath)
 }
 
 function PipelineGetProjectNameByPath
-    (    
-    [Parameter(Position=0, 
-        Mandatory=$true)]
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
     $AllProjectInfo,
     
-    [Parameter(Position=1, 
-        Mandatory=$true, 
-        ValueFromPipeline=$true)]
+    [Parameter(Position = 1, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
     $ProjectFilePath
-    )
+)
 {
     begin 
     {
@@ -326,7 +326,7 @@ function GetPathInfo ($RelativePaths, $ProjectFolderPath, [switch]$IsArtifact)
     # C:\Working\MySolution\BusinessRules\..\Shared\Shared.csproj
     # So need to resolve them into valid paths.
     $absolutePaths = $RelativePaths | PipelineGetAbsolutePath -FolderPath $ProjectFolderPath
-    $pathsInfo = $absolutePaths | Select-Object @{Name='Path';Expression={$_}},  @{Name='IsArtifact';Expression={$IsArtifact}}
+    $pathsInfo = $absolutePaths | Select-Object @{Name = 'Path'; Expression = { $_ } }, @{Name = 'IsArtifact'; Expression = { $IsArtifact } }
     return $pathsInfo
 }
 
@@ -463,16 +463,16 @@ relative paths in the project file and in the solution file will need to be conv
 paths, to be able to match them.
 #>
 function PipelineGetProjectRelationship
-    (    
-    [Parameter(Position=0, 
-        Mandatory=$true)]
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
     $AllProjectInfo,
     
-    [Parameter(Position=1, 
-        Mandatory=$true, 
-        ValueFromPipeline=$true)]
+    [Parameter(Position = 1, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
     $ProjectInfo
-    )
+)
 {
     begin 
     {
@@ -504,11 +504,11 @@ function PipelineGetProjectRelationship
         if ($referencedRelativePaths)
         {
             $referencedArtifactsPathsInfo = 
-                GetPathInfo -RelativePaths $referencedRelativePaths -ProjectFolderPath $parentProjectFolderPath -IsArtifact
+            GetPathInfo -RelativePaths $referencedRelativePaths -ProjectFolderPath $parentProjectFolderPath -IsArtifact
             $referencedPathsInfo += $referencedArtifactsPathsInfo
         }
 
-        foreach($pathInfo in $referencedPathsInfo)
+        foreach ($pathInfo in $referencedPathsInfo)
         {
             $referencedPath = $pathInfo.Path     
             $isArtifact = $pathInfo.IsArtifact       
@@ -521,21 +521,21 @@ function PipelineGetProjectRelationship
                 $newProjectId++
             }
 
-            $relationship = @{parentId=$parentProjectId; childId=$referencedProjectInfo.id}
+            $relationship = @{parentId = $parentProjectId; childId = $referencedProjectInfo.id }
             $projectRelationships += $relationship
         }
     }
 
     end
     {
-        return $AllProjectInfo,$projectRelationships
+        return $AllProjectInfo, $projectRelationships
     }
 }
 
 function GetHierarchyLevelColour($LevelNumber)
 {
     $colours = @('magenta', 'mediumblue', 'cyan', `
-        'lawngreen', 'yellow', 'darkorange', 'red', 'brown')
+            'lawngreen', 'yellow', 'darkorange', 'red', 'brown')
 
     $numberColours = $colours.Count
     $colourIndex = $LevelNumber % $numberColours
@@ -557,23 +557,23 @@ function SetHierarchyLevels ($AllProjectInfo, $AllProjectRelationships)
         if ($orphanIds)
         {
             $orphanIds | 
-                PipelineGetProjectInfoById -AllProjectInfo $AllProjectInfo |
-                ForEach-Object { $_.hierarchyLevel = $workingLevel }
+            PipelineGetProjectInfoById -AllProjectInfo $AllProjectInfo |
+            ForEach-Object { $_.hierarchyLevel = $workingLevel }
 
             $parentIds = $parentIds | Where-Object { $_ -notin $orphanIds }
             
             # Children of the projects at the current hierarchy level which have no children of their own:
             # Set their hierarchy level one higher than the current level.
             $orphanChildIds = $workingRelationships | 
-                Where-Object { $_.parentId -in $orphanIds } | 
-                Select-Object -ExpandProperty childId -Unique | 
-                Where-Object { $_ -notin $parentIds }
+            Where-Object { $_.parentId -in $orphanIds } | 
+            Select-Object -ExpandProperty childId -Unique | 
+            Where-Object { $_ -notin $parentIds }
 
             if ($orphanChildIds)
             {
                 $orphanChildIds | 
-                    PipelineGetProjectInfoById -AllProjectInfo $AllProjectInfo |
-                    ForEach-Object { $_.hierarchyLevel = $workingLevel + 1 }
+                PipelineGetProjectInfoById -AllProjectInfo $AllProjectInfo |
+                ForEach-Object { $_.hierarchyLevel = $workingLevel + 1 }
             }
 
             $workingRelationships = $workingRelationships | Where-Object { $_.parentId -notin $orphanIds }
@@ -585,18 +585,18 @@ function SetHierarchyLevels ($AllProjectInfo, $AllProjectRelationships)
 
 function PipelineGetAncestor 
 (    
-[Parameter(Position=0, 
-    Mandatory=$true)]
-$AllProjectInfo,
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
+    $AllProjectInfo,
 
-[Parameter(Position=1, 
-    Mandatory=$true)]
-$AllProjectRelationships,
+    [Parameter(Position = 1, 
+        Mandatory = $true)]
+    $AllProjectRelationships,
 
-[Parameter(Position=2, 
-    Mandatory=$true, 
-    ValueFromPipeline=$true)]
-$ProjectInfo
+    [Parameter(Position = 2, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
+    $ProjectInfo
 )
 {
     begin
@@ -608,8 +608,8 @@ $ProjectInfo
     {
         $projectId = $ProjectInfo.id
         $parentIds = $AllProjectRelationships | 
-            Where-Object { $_.childId -eq $projectId } | 
-            Select-Object -ExpandProperty parentId
+        Where-Object { $_.childId -eq $projectId } | 
+        Select-Object -ExpandProperty parentId
         $parentProjectsInfo = $AllProjectInfo | Where-Object { $parentIds -contains $_.id }
 
         if ($parentProjectsInfo)
@@ -630,18 +630,18 @@ $ProjectInfo
 
 function PipelineGetDescendant
 (    
-[Parameter(Position=0, 
-    Mandatory=$true)]
-$AllProjectInfo,
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
+    $AllProjectInfo,
 
-[Parameter(Position=1, 
-    Mandatory=$true)]
-$AllProjectRelationships,
+    [Parameter(Position = 1, 
+        Mandatory = $true)]
+    $AllProjectRelationships,
 
-[Parameter(Position=2, 
-    Mandatory=$true, 
-    ValueFromPipeline=$true)]
-$ProjectInfo
+    [Parameter(Position = 2, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
+    $ProjectInfo
 )
 {
     begin
@@ -653,8 +653,8 @@ $ProjectInfo
     {
         $projectId = $ProjectInfo.id
         $childIds = $AllProjectRelationships | 
-            Where-Object { $_.parentId -eq $projectId } | 
-            Select-Object -ExpandProperty childId
+        Where-Object { $_.parentId -eq $projectId } | 
+        Select-Object -ExpandProperty childId
         $childProjectsInfo = $AllProjectInfo | Where-Object { $childIds -contains $_.id }
 
         if ($childProjectsInfo)
@@ -674,32 +674,31 @@ $ProjectInfo
 }
 
 function SetProjectHighlight ($AllProjectInfo, $AllProjectRelationships, $ProjectNamesToHighlight, 
-[bool]$HighlightNodesAbove, [bool]$HighlightNodesBelow)
+    [bool]$HighlightNodesAbove, [bool]$HighlightNodesBelow)
 {
-    if (-not $AllProjectInfo -or -not $AllProjectRelationships -or -not $ProjectNamesToHighlight `
-    -or (-not $HighlightNodesAbove -and -not $HighlightNodesBelow))
+    if (-not $AllProjectInfo -or -not $AllProjectRelationships -or -not $ProjectNamesToHighlight)
     {
         return
     }
 
     $workingProjectsInfo = $ProjectNamesToHighlight | PipelineGetProjectInfoByName $AllProjectInfo
-    $highlightedProjectsInfo = @()
+    $projectsInfoToHighlight = @()
     if ($HighlightNodesAbove)
     {
         $ancestorProjectsInfo = $workingProjectsInfo | PipelineGetAncestor $AllProjectInfo $AllProjectRelationships
-        $highlightedProjectsInfo += $ancestorProjectsInfo
+        $projectsInfoToHighlight += $ancestorProjectsInfo
     }
     if ($HighlightNodesBelow)
     {
         $descendantProjectsInfo = $workingProjectsInfo | PipelineGetDescendant $AllProjectInfo $AllProjectRelationships
-        $highlightedProjectsInfo += $descendantProjectsInfo
+        $projectsInfoToHighlight += $descendantProjectsInfo
     }
 
-    $highlightedProjectsInfo += $workingProjectsInfo
+    $projectsInfoToHighlight += $workingProjectsInfo
 
-    if ($highlightedProjectsInfo)
+    if ($projectsInfoToHighlight)
     {
-        $highlightedProjectsInfo.ForEach{$_.isHighlighted = $true}
+        $projectsInfoToHighlight.ForEach{ $_.isHighlighted = $true }
     }
 }
 
@@ -715,12 +714,12 @@ function GetIsolatedProjectInfo ($AllProjectInfo, $AllProjectRelationships)
 }
 
 function PipelineGetYumlNode 
-    (    
-    [Parameter(Position=0, 
-        Mandatory=$true, 
-        ValueFromPipeline=$true)]
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
     $ProjectInfo
-    )
+)
 {
     begin
     {
@@ -750,16 +749,16 @@ function PipelineGetYumlNode
 }
 
 function PipelineGetYumlRelationship
-    (    
-    [Parameter(Position=0, 
-        Mandatory=$true)]
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
     $AllProjectInfo,
 
-    [Parameter(Position=1, 
-        Mandatory=$true, 
-        ValueFromPipeline=$true)]
+    [Parameter(Position = 1, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
     $ProjectRelationship
-    )
+)
 {
     begin
     {
@@ -795,32 +794,41 @@ function GenerateProjectDependencyGraph($SolutionFilePath, $ProjectNamesToHighli
 {
     $allProjectInfo = GetAllProjectInfo $SolutionFilePath
 
-    $allProjectInfo,$allProjectRelationships = $allProjectInfo | PipelineGetProjectRelationship $allProjectInfo
+    $allProjectInfo, $allProjectRelationships = $allProjectInfo | PipelineGetProjectRelationship $allProjectInfo
     SetHierarchyLevels $allProjectInfo $allProjectRelationships
 
     # Projects that do not depend on other projects and do not have other projects depend on them.
     $isolatedProjectsInfo = GetIsolatedProjectInfo $allProjectInfo $allProjectRelationships
     if ($isolatedProjectsInfo)
     {
-        $isolatedProjectsInfo.ForEach{$_.hierarchyLevel = 0}
+        $isolatedProjectsInfo.ForEach{ $_.hierarchyLevel = 0 }
     }
 
-    $doHighlight = ($ProjectNamesToHighlight -and ($HighlightNodesAbove -or $HighlightNodesBelow))
-
-    if ($doHighlight)
+    if ($ProjectNamesToHighlight)
     {
         SetProjectHighlight $allProjectInfo $allProjectRelationships $ProjectNamesToHighlight `
             $HighlightNodesAbove $HighlightNodesBelow
     }
     elseif ($UseColours)
     {
-        $allProjectInfo.ForEach{$_.isHighlighted = $true}
+        $allProjectInfo.ForEach{ $_.isHighlighted = $true }
     }
 
-    if ($doHighlight -and $ShowOnlyHighlightedNodes)
+    if ($ProjectNamesToHighlight -and $ShowOnlyHighlightedNodes)
     {
         $allProjectInfo = $allProjectInfo | Where-Object { $_.isHighlighted }
-        $isolatedProjectsInfo = $isolatedProjectsInfo | Where-Object { $_.isHighlighted }
+
+        # If neither $HighlightNodesAbove nor $HighlightNodesBelow are set then only the highlighted 
+        # nodes will be displayed.  Ensure they are included in the isolated projects because they 
+        # won't appear in the relationships (since no relationships will be included).
+        if (-not $HighlightNodesAbove -and -not $HighlightNodesBelow)
+        {
+            $isolatedProjectsInfo = $allProjectInfo
+        }
+        else 
+        {
+            $isolatedProjectsInfo = $isolatedProjectsInfo | Where-Object { $_.isHighlighted }
+        }
     }
 
     $isolatedProjectNodes = $isolatedProjectsInfo | PipelineGetYumlNode
