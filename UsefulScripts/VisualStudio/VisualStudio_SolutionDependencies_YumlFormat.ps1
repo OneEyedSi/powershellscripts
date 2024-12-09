@@ -41,11 +41,15 @@ If projects have been selected for highlighting then script variable $_useColour
 the projects listed in $_projectNamesToHighlight will be highlighted, along with the projects 
 above or below them in the graph if either $_highlightNodesAbove or $_highlightNodesBelow are set.
 
+In addition to highlighting projects with colour, you can use $_showLevelNumbers to add text 
+"(level nnn)" to each node, where nnn is the level in the hierarchy, counting from 0 at the 
+top-level projects.  
+
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
-Version:		2.1.0 
-Date:			6 June 2024
+Version:		2.1.1 
+Date:			9 December 2024
 
 For a generalised script for creating a Yuml.me dependency graph from arbitrary parent-child 
 pairs, see DemosAndExperiments/DEMO_Hierarchy_GetYumlCodeForDependencyGraph.ps1 in the 
@@ -53,13 +57,13 @@ PowerShell repository.
 
 #>
 
-$_solutionFilePath = "C:\Working\SourceControl\Test.sln"
+$_solutionFilePath = "C:\Working\SourceControl\Smartly\API\Integration.sln"
 
-$_projectNamesToHighlight = @(
+$_projectNamesToHighlight = @('Smartly.Workflow.API'
 )                            
-$_highlightNodesAbove = $true
+$_highlightNodesAbove = $false
 $_highlightNodesBelow = $true
-$_showOnlyHighlightedNodes = $false
+$_showOnlyHighlightedNodes = $true
 
 # Ignored if _projectNamesToHighlight set.
 $_useColours = $true
@@ -507,6 +511,250 @@ function PipelineGetProjectRelationship
             GetPathInfo -RelativePaths $referencedRelativePaths -ProjectFolderPath $parentProjectFolderPath -IsArtifact
             $referencedPathsInfo += $referencedArtifactsPathsInfo
         }
+
+        foreach ($pathInfo in $referencedPathsInfo)
+        {
+            $referencedPath = $pathInfo.Path     
+            $isArtifact = $pathInfo.IsArtifact       
+            $referencedProjectInfo = GetProjectInfoByPath $AllProjectInfo $referencedPath
+            if (-not $referencedProjectInfo)
+            {
+                $newProjectInfo = GetProjectInfoFromFilePath -ProjectFilePath $referencedPath -NewProjectId $newProjectId -IsArtifact:$isArtifact
+                $AllProjectInfo += $newProjectInfo
+                $referencedProjectInfo = $newProjectInfo
+                $newProjectId++
+            }
+
+            $relationship = @{parentId = $parentProjectId; childId = $referencedProjectInfo.id }
+            $projectRelationships += $relationship
+        }
+    }
+
+    end
+    {
+        return $AllProjectInfo, $projectRelationships
+    }
+}
+
+<#
+.SYNOPSIS
+Returns an array of the absolulte paths to nswag.json files used by NSwag CodeGen.
+#>
+function PipelineGetNSwagJsonFilePath 
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
+    $ParentProjectFolderPath,
+    
+    [Parameter(Position = 1, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
+    $CommandText
+)
+{
+    begin 
+    {
+        $nSwagRelativeFilePaths = @()
+    }
+
+    process
+    {
+        if (-not $CommandText)
+        {
+            return
+        }
+
+        $commandSegments = $commandText -split ' '
+        if (-not $commandSegments -or $commandSegments.Length -lt 3)
+        {
+            return
+        }
+
+        $indexOfRun = [array]::IndexOf($commandSegments, 'run')
+        if ($indexOfRun -lt 0)
+        {
+            return
+        }
+
+        $nSwagRelativeFilePaths = @()
+
+        # Scenario 1: Command is of the form "$(nswag exe name) run nswag.json ..."
+        # Get the nswag.json filename from the command.
+        if ($commandSegments.Length -gt ($indexOfRun + 1))
+        {
+            $nSwagRelativeFilePath = $commandSegments[$indexOfRun + 1]
+            if (-not $nSwagRelativeFilePath)
+            {
+                return
+            }
+            
+            # Command could be of the form "$(nswag exe name) run /variables:...", without a filename.
+            if (-not $nSwagRelativeFilePath.StartsWith('/') -and -not $nSwagRelativeFilePath.StartsWith('--'))
+            {
+                $nSwagRelativeFilePaths += nSwagRelativeFilePaths
+            }
+        }
+
+        # Scenario 2: Command is of the form "$(nswag exe name) run" (no file name)
+        # One or more nswag.json files will be in project root.
+        if (-not $nSwagRelativeFilePaths)
+        {
+            # Need wildcard in -Path if using Get-ChildItem -Include
+            $path = Join-Path $ParentProjectFolderPath '*'
+            $nSwagRelativeFilePaths += (Get-ChildItem -Path $path -Include 'nswag.json', '*.nswag' -File)
+
+            if (-not $nSwagRelativeFilePaths)
+            {
+                return
+            }
+        }
+    }
+
+    end 
+    {
+        if (-not $nSwagRelativeFilePaths)
+        {
+            return @()
+        }
+        $nSwagFilesAbsolutePathsInfo = GetPathInfo -RelativePaths $nSwagRelativeFilePaths `
+            -ProjectFolderPath $ParentProjectFolderPath
+        return $nSwagFilesAbsolutePathsInfo
+    }
+}
+
+<#
+.SYNOPSIS
+Pipeline function that returns a list of NSwag CodeGen projects with the projects each one is 
+generating client code for.
+
+.DESCRIPTION
+For each $ProjectInfo hash table passed through the pipeline, the function will open the listed 
+project file and find the nswag.json or *.nswag file used by NSwag CodeGen.  It will then open 
+that JSON file to determine the project NSwag CodeGen is generating client code for.  It will 
+then add a hash table to the output list, with the project name as the key and the referenced 
+projects as the value.
+
+.NOTES
+Each project file will be in XML format.  
+
+The project file will be of the form:
+
+    <Project ...>
+        :
+        :
+        <Target Name="GenerateApiClientSourceCode" BeforeTargets="CoreCompile">
+            <Exec Command="$(NSwagExe_Net80) run nswag.json /variables:Configuration=$(Configuration),OutputPath=$(MSBuildThisFileDirectory)" />
+            <ItemGroup>
+                <Compile Include="$(MSBuildThisFileDirectory)\*.cs" Exclude="@(Compile)" />
+            </ItemGroup>
+        </Target>
+        :
+        :
+    </Project>
+
+The nswag.json file can use either webApiToOpenApi or aspNetCoreToOpenApi.  The file will be of 
+the  form:
+
+    {
+        "runtime": "Net70",
+        "defaultVariables": null,
+        "documentGenerator": {
+            "webApiToOpenApi": {
+                :
+                :
+                "assemblyPaths": [
+                    "../Core.API/bin/$(Configuration)/net7.0/Core.API.dll"
+                ],
+                :
+                :
+            }
+        },
+        "codeGenerators": {
+            "openApiToCSharpClient": {
+                :
+                :
+            }
+        }
+    }
+
+or of the form:
+
+    {
+        "runtime": "Net80",
+        "defaultVariables": null,
+        "documentGenerator": {
+            "aspNetCoreToOpenApi": {
+                "project": "../Core.API/Core.API.csproj",
+                :
+                :
+            }
+        },
+        "codeGenerators": {
+            "openApiToCSharpClient": {
+                :
+                :
+            }
+        }
+    }
+
+The only way to link the NSwag CodeGen project to the projects it is generating code for is by 
+extracting the referenced project name from the csproj or DLL filename in the nswag.json file.
+#>
+function PipelineGetNSwagCodeGenProjectRelationship
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
+    $AllProjectInfo,
+    
+    [Parameter(Position = 1, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
+    $ProjectInfo
+)
+{
+    begin 
+    {
+        $maxProjectId = $AllProjectInfo | Measure-Object -Property id -Maximum | Select-Object -ExpandProperty Maximum
+        $newProjectId = $maxProjectId + 1
+        $projectRelationships = @()
+    }
+
+    process
+    {
+        $parentProjectFileName = $ProjectInfo.filePath
+        $parentProjectFolderPath = Split-Path $parentProjectFileName -Parent
+        $parentProjectId = $ProjectInfo.id
+
+        $xmlDoc = new-object xml
+        $xmlDoc.load($parentProjectFileName)
+
+        $referencedPathsInfo = @()
+
+        $commandsText = $xmlDoc.Project.Target.Exec.Command
+
+        if (-not $commandsText)
+        {
+            return
+        }
+
+        if (-not $commandsText -is [array])
+        {
+            $commandsText = @($commandsText)
+        }
+        
+        $nSwagFilesAbsolutePathsInfo = $commandsText | 
+        PipelineGetNSwagJsonFilePath $ParentProjectFolderPath
+
+        if (-not $nSwagFilesAbsolutePathsInfo)
+        {
+            return
+        }
+
+        # if ($commandsText)
+        # {
+
+        #     $referencedPathsInfo = GetPathInfo -RelativePaths $referencedRelativePaths -ProjectFolderPath $parentProjectFolderPath 
+        # }
 
         foreach ($pathInfo in $referencedPathsInfo)
         {
