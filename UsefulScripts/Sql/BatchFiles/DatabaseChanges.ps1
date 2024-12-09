@@ -18,8 +18,8 @@ Requires:		PowerShell 5.1 or greater
                     (these will be installed automatically if not already installed)
                     - SqlServer
                     - Pslogg (logging module)
-Version:		2.0.0
-Date:			4 Dec 2023
+Version:		2.0.1
+Date:			10 Dec 2024
 
 When listing the SQL script file names, the file extensions are optional.  So a SQL script file 
 name could be either like "script_name.sql" or simply "script_name".
@@ -266,7 +266,7 @@ function Initialize-Logger (
     }
 
     Set-LogConfiguration -LogLevel VERBOSE -WriteToHost
-    Set-LogConfiguration -LogFileName $_logFileNameBaseName -ExcludeDateFromFileName:$False `
+    Set-LogConfiguration -LogFileName $LogFileName -ExcludeDateFromFileName:$False `
         -EnableFileLoggingFromScript -OverwriteLogFile:$OverwriteLogFile
     Set-LogConfiguration -CategoryInfoItem 'Success', @{ Color = 'Green' }
     Set-LogConfiguration -CategoryInfoItem 'Failure', @{ Color = 'Red' }
