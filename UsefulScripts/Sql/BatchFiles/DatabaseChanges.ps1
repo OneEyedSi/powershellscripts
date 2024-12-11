@@ -18,8 +18,8 @@ Requires:		PowerShell 5.1 or greater
                     (these will be installed automatically if not already installed)
                     - SqlServer
                     - Pslogg (logging module)
-Version:		2.0.1
-Date:			10 Dec 2024
+Version:		2.1.0
+Date:			11 Dec 2024
 
 When listing the SQL script file names, the file extensions are optional.  So a SQL script file 
 name could be either like "script_name.sql" or simply "script_name".
@@ -78,10 +78,10 @@ lowercase letter.  Script-level variables use _camelCase, with a leading undersc
 # -------------------------------------------------------------------------------------------------
 # Default file extension, if none is specified, is ".sql".
 $_sqlScriptNames = @(
-                    "SqlCmdVarTest"
-                    "CreateTestTable1"
-                    "CreateTestTable2"
-                    )
+    "SqlCmdVarTest"
+    "CreateTestTable1"
+    "CreateTestTable2"
+)
 
 # -------------------------------------------------------------------------------------------------
 # No changes needed below this point; the remaining code is generic.
@@ -95,37 +95,37 @@ $_sqlScriptNames = @(
 # NOTE: All servers and credentials listed below are dummies, used for 
 # illustration only.  They do not really exist.
 [System.Object[]]$_sqlServers = @(
-                                    @{
-                                        key="L"; 
-                                        connectionString="Server=(localdb)\mssqllocaldb;Database=Test;Trusted_Connection=yes;";
-                                        serverType="LOCALDB"; 
-                                        menuText="(L)ocaldb"
-                                    },
-                                    @{
-                                        key="D"; 
-                                        connectionString="Server=DEV.DEV.LOCAL;Database=Test;Trusted_Connection=yes;";
-                                        serverType="DEV"; 
-                                        menuText="(D)ev"
-                                    },
-                                    @{
-                                        key="T"; 
-                                        connectionString="Server=TEST.DEV.LOCAL;Database=Test;Trusted_Connection=yes;";
-                                        serverType="TEST"; 
-                                        menuText="(T)est"
-                                    },
-                                    @{
-                                        key="U"; 
-                                        connectionString="Server=SQLTEST01.sit.local;Database=Test;User ID=SitUser;Password=qawsedrftg;";
-                                        serverType="UAT"; 
-                                        menuText="(U)AT"
-                                    },
-                                    @{
-                                        key="P"; 
-                                        connectionString="Server=SQLPROD01.prod.local;Database=ProdDB;User ID=ProductionUser;Password=Password1;";
-                                        serverType="LIVE"; 
-                                        menuText="(P)roduction"
-                                    }
-                                )
+    @{
+        key              = "L"; 
+        connectionString = "Server=(localdb)\mssqllocaldb;Database=Test;Trusted_Connection=yes;";
+        serverType       = "LOCALDB"; 
+        menuText         = "(L)ocaldb"
+    },
+    @{
+        key              = "D"; 
+        connectionString = "Server=DEV.DEV.LOCAL;Database=Test;Trusted_Connection=yes;";
+        serverType       = "DEV"; 
+        menuText         = "(D)ev"
+    },
+    @{
+        key              = "T"; 
+        connectionString = "Server=TEST.DEV.LOCAL;Database=Test;Trusted_Connection=yes;";
+        serverType       = "TEST"; 
+        menuText         = "(T)est"
+    },
+    @{
+        key              = "U"; 
+        connectionString = "Server=SQLTEST01.sit.local;Database=Test;User ID=SitUser;Password=qawsedrftg;";
+        serverType       = "UAT"; 
+        menuText         = "(U)AT"
+    },
+    @{
+        key              = "P"; 
+        connectionString = "Server=SQLPROD01.prod.local;Database=ProdDB;User ID=ProductionUser;Password=Password1;";
+        serverType       = "LIVE"; 
+        menuText         = "(P)roduction"
+    }
+)
 
 # The log file will be created in the same folder as this script.  It will have the run date 
 # automatically appended to the file name.  For example, "release_20231203.log"
@@ -162,85 +162,93 @@ Cannot include logging in this function because it will be used to install the l
 if it's not already installed.
 #>
 function Install-RequiredModule (
-    [string]$ModuleName,
+    [Parameter(Position = 0, Mandatory = $true)]
     [string]$RepositoryName,
-    [string]$ProxyUrl
-    )
+
+    [Parameter(Position = 1, Mandatory = $false)]
+    [string]$ProxyUrl,
+
+    [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
+    [string]$ModuleName
+)
 {
-    Write-Output "    Checking whether PowerShell module '$ModuleName' is installed..."
-
-    # "Get-InstalledModule -Name <module name>" will throw a non-terminating error if the module 
-    # is not installed.  Don't want to display the error so silently continue.
-    if (Get-InstalledModule -Name $ModuleName `
-        -ErrorAction SilentlyContinue -WarningAction SilentlyContinue)
+    process 
     {
-        Write-Output "    Module '$ModuleName' is installed."
-        return
-    }
-    
-    Write-Output "    Installing PowerShell module '$ModuleName'..."
+        Write-Output "    Checking whether PowerShell module '$ModuleName' is installed..."
 
-    # Repository probably has too many modules to enumerate them all to find the name.  So call 
-    # "Find-Module -Repository $RepositoryName -Name $ModuleName" which will raise a 
-    # non-terminating error if the module isn't found.
-
-    # Silently continue on error because the error message isn't user friendly.  We'll display 
-    # our own error message if needed.
-    if ((Find-Module -Repository $RepositoryName -Name $ModuleName `
-        -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).Count -eq 0)
-    {
-        throw "Module '$ModuleName' not found in repository '$RepositoryName'.  Exiting."
-    }
-
-    try
-    {
-        # Ensure the repository is trusted otherwise the user will get an "untrusted repository"
-        # warning message.
-        $repositoryInstallationPolicy = (Get-PSRepository -Name $RepositoryName |
-                                            Select-Object -ExpandProperty InstallationPolicy)
-        if ($repositoryInstallationPolicy -ne 'Trusted')
+        # "Get-InstalledModule -Name <module name>" will throw a non-terminating error if the module 
+        # is not installed.  Don't want to display the error so silently continue.
+        if (Get-InstalledModule -Name $ModuleName `
+                -ErrorAction SilentlyContinue -WarningAction SilentlyContinue)
         {
-            Set-PSRepository -Name $RepositoryName -InstallationPolicy Trusted
+            Write-Output "    Module '$ModuleName' is installed."
+            return
         }
-    }
-    catch 
-    {
-        throw "Module repository '$RepositoryName' not found.  Exiting."
-    }
-    
-    try
-    {        
-        # If Install-Module fails because it's behind a proxy we want to fail silently, without 
-        # displaying any message to scare the user.  
-        # Errors from Install-Module are non-terminating.  They won't be caught using try - catch 
-        # unless ErrorAction is set to Stop. 
-        Install-Module -Name $ModuleName -Repository $RepositoryName `
-            -Scope CurrentUser -ErrorAction Stop -WarningAction SilentlyContinue
-    }
-    catch 
-    {
-        # Try again, this time with proxy details, if we have them.
+        
+        Write-Output "    Installing PowerShell module '$ModuleName'..."
 
-        if ([string]::IsNullOrWhiteSpace($ProxyUrl))
+        # Repository probably has too many modules to enumerate them all to find the name.  So call 
+        # "Find-Module -Repository $RepositoryName -Name $ModuleName" which will raise a 
+        # non-terminating error if the module isn't found.
+
+        # Silently continue on error because the error message isn't user friendly.  We'll display 
+        # our own error message if needed.
+        if ((Find-Module -Repository $RepositoryName -Name $ModuleName `
+                    -ErrorAction SilentlyContinue -WarningAction SilentlyContinue).Count -eq 0)
         {
-            throw "Unable to install module '$ModuleName' directly and no proxy server details supplied.  Exiting."
+            throw "Module '$ModuleName' not found in repository '$RepositoryName'.  Exiting."
         }
 
-        $proxyCredential = Get-Credential -Message 'Please enter credentials for proxy server'
+        try
+        {
+            # Ensure the repository is trusted otherwise the user will get an "untrusted repository"
+            # warning message.
+            $repositoryInstallationPolicy = (Get-PSRepository -Name $RepositoryName |
+                Select-Object -ExpandProperty InstallationPolicy)
+            if ($repositoryInstallationPolicy -ne 'Trusted')
+            {
+                Set-PSRepository -Name $RepositoryName -InstallationPolicy Trusted
+            }
+        }
+        catch 
+        {
+            throw "Module repository '$RepositoryName' not found.  Exiting."
+        }
+        
+        try
+        {        
+            # If Install-Module fails because it's behind a proxy we want to fail silently, without 
+            # displaying any message to scare the user.  
+            # Errors from Install-Module are non-terminating.  They won't be caught using try - catch 
+            # unless ErrorAction is set to Stop. 
+            Install-Module -Name $ModuleName -Repository $RepositoryName `
+                -Scope CurrentUser -ErrorAction Stop -WarningAction SilentlyContinue
+        }
+        catch 
+        {
+            # Try again, this time with proxy details, if we have them.
 
-        # No need to Silently Continue this time.  We want to see the error details.  Convert 
-        # non-terminating errors to terminating via ErrorAction Stop.   
-        Install-Module -Name $ModuleName -Repository $RepositoryName `
-            -Proxy $ProxyUrl -ProxyCredential $proxyCredential `
-            -Scope CurrentUser -ErrorAction Stop
+            if ([string]::IsNullOrWhiteSpace($ProxyUrl))
+            {
+                throw "Unable to install module '$ModuleName' directly and no proxy server details supplied.  Exiting."
+            }
+
+            $proxyCredential = Get-Credential -Message 'Please enter credentials for proxy server'
+
+            # No need to Silently Continue this time.  We want to see the error details.  Convert 
+            # non-terminating errors to terminating via ErrorAction Stop.   
+            Install-Module -Name $ModuleName -Repository $RepositoryName `
+                -Proxy $ProxyUrl -ProxyCredential $proxyCredential `
+                -Scope CurrentUser -ErrorAction Stop
+        }
+
+        if (-not (Get-InstalledModule -Name $ModuleName -ErrorAction SilentlyContinue))
+        {
+            throw "Unknown error installing module '$ModuleName' from repository '$RepositoryName'.  Exiting."
+        }
+
+        Write-Output "    Module '$ModuleName' successfully installed."
     }
-
-    if (-not (Get-InstalledModule -Name $ModuleName -ErrorAction SilentlyContinue))
-    {
-        throw "Unknown error installing module '$ModuleName' from repository '$RepositoryName'.  Exiting."
-    }
-
-    Write-Output "    Module '$ModuleName' successfully installed."
 }
 
 <#
@@ -254,7 +262,7 @@ Sets up the Pslogg logging module to write to the PowerShell host and to a log f
 function Initialize-Logger (
     [string]$LogFileName,
     [switch]$OverwriteLogFile
-    )
+)
 {
     $fileNameIsValid = Test-Path $LogFileName -IsValid
 
@@ -287,10 +295,10 @@ running in will be prepended to the filename.
 
 #>
 function Get-AbsolutePath (
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     [ValidateNotNullOrEmpty()]
     [string]$Path
-    )
+)
 {
     if ([System.IO.Path]::IsPathRooted($Path))
     {
@@ -312,9 +320,9 @@ Logs the raw log message, without any other fields like a timestamp.
 .NOTES
 #>
 function Write-RawLogMessage (
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     [string]$Message
-    )
+)
 {
     Write-LogMessage -Message $Message -MessageFormat '{Message}'
 }
@@ -330,12 +338,12 @@ Writes a heading that makes it obvious this is the start of a deployment.
 Useful for repeated deployments, which may be written to the same log file.
 #>
 function Write-LogHeader (
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     $SelectedServerDetails,
 
-    [Parameter(Mandatory=$False)]
+    [Parameter(Mandatory = $False)]
     [string]$LogFileName
-    )
+)
 {
     $horizontalLine = "======================================================="
     Write-RawLogMessage $horizontalLine
@@ -352,9 +360,9 @@ function Write-LogHeader (
 
     $loggerConfiguration = Get-LogConfiguration
     if ($loggerConfiguration `
-        -and $loggerConfiguration.LogFile `
-        -and $loggerConfiguration.LogFile.WriteFromScript `
-        -and $loggerConfiguration.LogFile.Name)
+            -and $loggerConfiguration.LogFile `
+            -and $loggerConfiguration.LogFile.WriteFromScript `
+            -and $loggerConfiguration.LogFile.Name)
     {
         $message = "Results logged to: $($loggerConfiguration.LogFile.FullPathReadOnly)"
         Write-RawLogMessage $message
@@ -375,13 +383,13 @@ Prompts the user to enter CTRL+C if they wish to abort the deployment.  Otherwis
 function will loop repeatedly until the user enters a valid letter.
 #>
 function Get-UserSelection (
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     $SqlServers
-    )
+)
 {
     Write-Host "Select the server to run the SQL scripts on (type a letter followed by the [Enter] key, or press CTRL+C to exit)"
 
-    $menuTexts = $SqlServers | ForEach-Object {$_.menuText}
+    $menuTexts = $SqlServers | ForEach-Object { $_.menuText }
     $maxLength = ($menuTexts | Measure-Object -Maximum -Property Length).Maximum
 
     $tabLength = 8
@@ -391,11 +399,11 @@ function Get-UserSelection (
     foreach ($server in $SqlServers)
     {
         $numberTabsToAdd = $numberTabs - [Math]::Floor($server.menuText.Length / $tabLength)
-		$tabs = "`t" * $numberTabsToAdd
+        $tabs = "`t" * $numberTabsToAdd
         Write-Host "`t$($server.menuText):$tabs$($server.serverName)"
     }
 
-    $validSelections = $SqlServers | ForEach-Object {$_.key}
+    $validSelections = $SqlServers | ForEach-Object { $_.key }
     $userSelection = ""
 
     while ($True)
@@ -425,9 +433,9 @@ key and value, and adds them to a hashtable.
 .NOTES
 #>
 function Convert-ConnectionStringToHashtable (
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     [string[]]$ConnectionString
-    )
+)
 {
     if ([string]::IsNullOrWhiteSpace($ConnectionString))
     {
@@ -437,7 +445,7 @@ function Convert-ConnectionStringToHashtable (
     $connectionStringParts = $ConnectionString.Split(';')
 
     $hashTable = @{}
-    foreach($part in $connectionStringParts)
+    foreach ($part in $connectionStringParts)
     {
         $keyValuePair = $part.Split('=')
         if ($keyValuePair.Length -eq 2)
@@ -467,12 +475,12 @@ the first of the possible keys it encounters in the hashtable.
 ASSUMPTION: That all values in the hashtable are strings.
 #>
 function Read-HashtableValue (
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     [hashtable]$Hashtable,
     
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     [string[]]$PossibleKeyNames
-    )
+)
 {
     if ($Hashtable -eq $null -or $Hashtable.Count -eq 0)
     {
@@ -483,7 +491,7 @@ function Read-HashtableValue (
         return $null
     }
 
-    foreach($key in $PossibleKeyNames)
+    foreach ($key in $PossibleKeyNames)
     {
         $value = $Hashtable[$key]
         if (-not [string]::IsNullOrWhiteSpace($value))
@@ -508,15 +516,15 @@ The lists of possible key names come from "SqlConnection.ConnectionString Proper
 https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlconnection.connectionstring
 #>
 function Get-ServerDetails (
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     $SqlServers, 
     
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     [ValidateNotNullOrEmpty()]
     [string]$UserSelection
-    )
+)
 {
-    $selectedServerDetails = $SqlServers | Where-Object{$_.key -eq $UserSelection}
+    $selectedServerDetails = $SqlServers | Where-Object { $_.key -eq $UserSelection }
 
     # This should never happen as Get-UserSelection should ensure the user chooses a valid 
     # selection.  But it can't hurt to be careful.
@@ -551,7 +559,7 @@ function Get-ServerDetails (
     }
 
     $serverName = Read-HashtableValue -Hashtable $connectionDetails `
-        -PossibleKeyNames 'Data Source','Server','Address','Addr','Network Address'
+        -PossibleKeyNames 'Data Source', 'Server', 'Address', 'Addr', 'Network Address'
 
     if (-not $serverName)
     {
@@ -563,7 +571,7 @@ function Get-ServerDetails (
     $selectedServerDetails.serverName = $serverName
 
     $databaseName = Read-HashtableValue -Hashtable $connectionDetails `
-        -PossibleKeyNames 'Initial Catalog','Database'
+        -PossibleKeyNames 'Initial Catalog', 'Database'
 
     if (-not $databaseName)
     {
@@ -575,18 +583,18 @@ function Get-ServerDetails (
     $selectedServerDetails.databaseName = $databaseName
 
     $trustedConnection = Read-HashtableValue -Hashtable $connectionDetails `
-        -PossibleKeyNames 'Integrated Security','Trusted_Connection'
+        -PossibleKeyNames 'Integrated Security', 'Trusted_Connection'
 
-    $SelectedServerDetails.useWindowsAuthentication =  `
-        ($trustedConnection -and $trustedConnection -in  @('true', 'yes', 'sspi'))
+    $SelectedServerDetails.useWindowsAuthentication = `
+    ($trustedConnection -and $trustedConnection -in @('true', 'yes', 'sspi'))
 
     if (-not $SelectedServerDetails.useWindowsAuthentication)
     {
         $SelectedServerDetails.userName = Read-HashtableValue -Hashtable $connectionDetails `
-            -PossibleKeyNames 'User ID','UID','User'
+            -PossibleKeyNames 'User ID', 'UID', 'User'
             
         $SelectedServerDetails.password = Read-HashtableValue -Hashtable $connectionDetails `
-        -PossibleKeyNames 'Password','PWD'
+            -PossibleKeyNames 'Password', 'PWD'
     }
 
     return $selectedServerDetails
@@ -609,15 +617,15 @@ function Get-SqlResult
     Param
     (
         [AllowNull()]
-        [Parameter(Position=1,
-                    Mandatory=$True,
-                    ValueFromPipeline=$True)]
+        [Parameter(Position = 1,
+            Mandatory = $True,
+            ValueFromPipeline = $True)]
         $sqlResult,
 
-        [Parameter(Mandatory=$False)]
+        [Parameter(Mandatory = $False)]
         [switch]$SqlVerboseLoggingOn,
 
-        [Parameter(Mandatory=$False)]
+        [Parameter(Mandatory = $False)]
         [switch]$ExpectNonNullResult
     )
 
@@ -652,7 +660,7 @@ function Get-SqlResult
             }
         }
         elseif ($SqlVerboseLoggingOn `
-        -and $sqlResult -is [System.Management.Automation.InformationalRecord])
+                -and $sqlResult -is [System.Management.Automation.InformationalRecord])
         {
             # InformationalRecord can be a DebugRecord, a VerboseRecord or a WarningRecord.
                         
@@ -694,34 +702,34 @@ function Invoke-Sql
     [CmdletBinding()]
     Param
     (
-        [Parameter(Position=1,
-                    Mandatory=$True)]
+        [Parameter(Position = 1,
+            Mandatory = $True)]
         $SelectedServerDetails, 
 
-        [Parameter(Position=2,
-                    Mandatory=$False)]
+        [Parameter(Position = 2,
+            Mandatory = $False)]
         [switch]$SqlVerboseLoggingOn, 
 
-        [Parameter(Position=3,
-                    Mandatory=$False,
-                    ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Position = 3,
+            Mandatory = $False,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$SqlScriptFileName, 
 
-        [Parameter(Position=4,
-                    Mandatory=$False,
-                    ValueFromPipelineByPropertyName=$True)]
+        [Parameter(Position = 4,
+            Mandatory = $False,
+            ValueFromPipelineByPropertyName = $True)]
         [string]$SqlQuery,
 
-        [Parameter(Mandatory=$False)]
+        [Parameter(Mandatory = $False)]
         [switch]$ExpectNonNullResult,
 
-        [Parameter(Mandatory=$False)]
+        [Parameter(Mandatory = $False)]
         [switch]$SuppressErrorLogging
     )
 
     process
     {
-        $result = @{wasSuccessful=$False; output=$null}
+        $result = @{wasSuccessful = $False; output = $null }
 
         if (-not $SqlScriptFileName -and -not $SqlQuery)
         {
@@ -778,15 +786,15 @@ function Invoke-Sql
             # Pass sqlcmd variable $(ServerType), set to the serverType selected by the user, 
             # into the SQL script or command.
             $serverType = $SelectedServerDetails.serverType
-            $serverTypeVariableDefinition = @{ServerType=$serverType}
+            $serverTypeVariableDefinition = @{ServerType = $serverType }
             # *>&1 means all streams (eg Verbose, Error) are merged into pipeline output.
             # Note splatting operator on @optionalParameters.
             # -ErrorAction Stop turns non-terminating errors into terminating errors that will 
             # be caught by the catch block.
             $result.output = (Invoke-Sqlcmd `
-                -Variable $serverTypeVariableDefinition `
-                -OutputSqlErrors $True -IncludeSqlUserErrors `
-                -Verbose @optionalParameters) *>&1
+                    -Variable $serverTypeVariableDefinition `
+                    -OutputSqlErrors $True -IncludeSqlUserErrors `
+                    -Verbose @optionalParameters) *>&1
 
             $result.wasSuccessful = ($result.output |
                 Get-SqlResult -SqlVerboseLoggingOn:$SqlVerboseLoggingOn -ExpectNonNullResult:$ExpectNonNullResult)
@@ -827,9 +835,9 @@ Checks the connection to the SQL Server instance specified in the server details
 .NOTES
 #>
 function Test-SqlServer (
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     $SelectedServerDetails
-    )
+)
 {
     $sqlServerName = $SelectedServerDetails.serverName
 
@@ -876,9 +884,9 @@ Checks that the database specified in the server details exists on the selected 
 .NOTES
 #>
 function Test-Database (
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     $SelectedServerDetails
-    )
+)
 {
     $databaseName = $SelectedServerDetails.databaseName
     $sqlServerName = $SelectedServerDetails.serverName
@@ -926,21 +934,21 @@ scripts against that server.
 .NOTES
 #>
 function Update-Database (
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     $SqlServers,
 
-    [Parameter(Mandatory=$True)]
+    [Parameter(Mandatory = $True)]
     [string[]]$SqlScriptNames,
 
-    [Parameter(Mandatory=$False)]
+    [Parameter(Mandatory = $False)]
     [switch]$SqlVerboseLoggingOn,
 
-    [Parameter(Mandatory=$False)]
+    [Parameter(Mandatory = $False)]
     [string]$LogFileName
-    )
+)
 {
     $userSelection = Get-UserSelection $SqlServers
-    $selectedServerDetails =  Get-ServerDetails $SqlServers $userSelection
+    $selectedServerDetails = Get-ServerDetails $SqlServers $userSelection
 
     if (-not $selectedServerDetails)
     {
@@ -970,10 +978,10 @@ function Update-Database (
 
     $allScriptsSuccessful = $True
     $SqlScriptNames |
-        Select-Object @{Name="SqlScriptFileName"; Expression={$_}} |
-        Invoke-Sql -SelectedServerDetails $selectedServerDetails `
-                        -SqlVerboseLoggingOn:$SqlVerboseLoggingOn |
-        ForEach-Object { if (-not $_.wasSuccessful) {$allScriptsSuccessful = $False} }
+    Select-Object @{Name = "SqlScriptFileName"; Expression = { $_ } } |
+    Invoke-Sql -SelectedServerDetails $selectedServerDetails `
+        -SqlVerboseLoggingOn:$SqlVerboseLoggingOn |
+    ForEach-Object { if (-not $_.wasSuccessful) { $allScriptsSuccessful = $False } }
     
     $endTime = Get-Date
     $timeTaken = $endTime - $startTime    
@@ -996,10 +1004,8 @@ function Update-Database (
 Clear-Host 
 
 Write-Output 'Checking required PowerShell modules are installed:'
-foreach($module in $_requiredModules)
-{
-    Install-RequiredModule -ModuleName $module -RepositoryName $_moduleRepository -ProxyUrl $_proxyServerUrl
-}
+
+$_requiredModules | Install-RequiredModule -RepositoryName $_moduleRepository -ProxyUrl $_proxyServerUrl
 
 Initialize-Logger -LogFileName $_logFileNameBaseName -OverwriteLogFile:$_overwriteLogFile
 Write-Output ''
