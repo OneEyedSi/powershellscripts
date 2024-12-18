@@ -76,7 +76,7 @@ function Call-ViaSplatting (
     }
     else
     {
-        Write-Error "Unregonised collection type: $($ParameterCollection.GetType().FullName).  Aborting."
+        Write-Error "Unrecognised collection type: $($ParameterCollection.GetType().FullName).  Aborting."
         return
     }
 
