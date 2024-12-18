@@ -25,6 +25,7 @@
 
 # Modules in their own repos
 Modules/
+!UsefulScripts/Modules/
 
 # Files we don't want in a public repo
 ExcludeFromRepo/
