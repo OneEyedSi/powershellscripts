@@ -9,13 +9,13 @@ automated system login events.
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
-Version:		2.0.0 
-Date:			  13 Sep 2023
+Version:		2.0.1 
+Date:			  4 Jun 2024
 
 #>
 
 $numberOfEventsToReturn = 10
-$userNameToCheck = 'JoeBloggs'
+$userNameToCheck = 'simon.elms@datacom.com'
 
 $computerToCheck = $env:COMPUTERNAME
 $filterXml = @"
@@ -34,7 +34,7 @@ $filterXml = @"
 
 function Write-Message ([string]$Message, $Argument, [int]$IndentLevel)
 {
-    $hasArgument = ($Argument -ne $null)
+    $hasArgument = ($null -ne $Argument)
 
     $NUMBER_INDENT_SPACES = 4
     $indentSpacer = ' ' * $NUMBER_INDENT_SPACES * $IndentLevel
