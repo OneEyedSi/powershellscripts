@@ -21,6 +21,17 @@ function Get-Text ()
     return "$a; $b"
 }
 
+function Get-TextWithInput ([string]$InputValue)
+{
+    $a = Get-FirstText
+    return "$InputValue plus '$a'"
+}
+
+function Invoke-TextWithInput ([string]$Value)
+{
+    return Get-TextWithInput $Value
+}
+
 function Set-Something     
 {
     [CmdletBinding()]

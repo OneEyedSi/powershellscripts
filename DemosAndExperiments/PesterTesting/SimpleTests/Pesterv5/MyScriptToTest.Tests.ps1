@@ -59,6 +59,21 @@ Describe 'Get-Text' {
     }
 }
 
+Describe 'Invoke-TextWithInput' {
+    Context 'mock returns input value' {
+        BeforeAll {
+            # $InputValue is defined in the function being mocked.  It's the function's parameter.
+            Mock Get-TextWithInput { return $InputValue }
+        }
+
+        It 'returns input value without changing it' {
+            $val = 'My input'
+            $result = Invoke-TextWithInput $val
+            $result | Should -Be $val
+        }
+    }
+}
+
 Describe 'Invoke-Something' {
     Context 'call mocked function directly' {
         BeforeAll {
