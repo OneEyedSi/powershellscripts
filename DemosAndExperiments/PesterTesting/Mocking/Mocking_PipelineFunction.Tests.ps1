@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-Demonstrates mocking a function that updates a hashtable.
+Demonstrates mocking a function that accepts input from the pipeline and updates a hashtable.
 
 .NOTES
 Author:			Simon Elms
@@ -9,8 +9,8 @@ Version:		1.0.0
 Date:			1 Jan 2025
 
 The following scripts belong together:
-* Mocking_FunctionThatUpdatesHashTable.ps1:         Function under test
-* Mocking_FunctionThatUpdatesHashTable.Tests.ps1:   Tests
+* Mocking_PipelineFunction.ps1:        Function under test
+* Mocking_PipelineFunction.Tests.ps1:  Tests
 
 Normally the function under test could be included in the .Tests file, in a BeforeAll block.  However, if you wish to run 
 the function under test manually in the top-level code of a script you'll have to move it to a different file.  This is 
@@ -34,13 +34,13 @@ test normally, as opposed to via Pester, will not set $InTestContext and will al
 
 #region Configuration ******************************************************************************************************
 
-# Can't dot source using ". .\Mocking_FunctionThatUpdatesHashTable.ps1" (without quotes) as relative paths are relative 
+# Can't dot source using ". .\Mocking_PipelineFunction.ps1" (without quotes) as relative paths are relative 
 # to the current working directory, not the directory this test file is in.  So Use $PSScriptRoot to get the directory this 
 # file is in, and dot source the file to test from the same directory.
 # -InTestContext switch ensures the script under test doesn't run automatically when dot sourced into this script.
 BeforeAll {
     # Must dot-source file to test in BeforeAll.
-    . (Join-Path $PSScriptRoot 'Mocking_FunctionThatUpdatesHashTable.ps1') -InTestContext
+    . (Join-Path $PSScriptRoot 'Mocking_PipelineFunction.ps1') -InTestContext
 }
 
 #endregion Configuration ***************************************************************************************************
@@ -50,18 +50,30 @@ BeforeAll {
 Describe 'Set-Something' {
     BeforeAll {
         Mock Update-HashTable {  
-            $HashTable.State = 'Test State'
+            process 
+            {
+                $HashTable.State = "Test State"
+            }
         } 
     }
     BeforeEach {
-        $ht = @{Name='Name'; Description='Description'}
+        $array = @(
+            @{Name='Name 1'; Description='Description 1'}
+            @{Name='Name 2'; Description='Description 2'}
+            @{Name='Name 3'; Description='Description 3'}
+            @{Name='Name 4'; Description='Description 4'}
+        )
     }
 
-    It 'sets the State for the supplied hashtable' {
-        Set-Something $ht
+    It 'sets the State in each supplied hashtable' {
+        Set-Something $array
 
-        $ht.ContainsKey('State') | Should -BeTrue
-        $ht.State | Should -BeExactly 'Test State'
+        $array | Should -HaveCount 4
+        foreach($hashtable in $array)
+        {
+            $hashtable.ContainsKey('State') | Should -BeTrue
+            $hashtable.State | Should -BeExactly 'Test State'
+        }
     }
 }
 

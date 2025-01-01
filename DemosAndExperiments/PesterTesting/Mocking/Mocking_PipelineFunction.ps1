@@ -1,16 +1,16 @@
 ﻿<#
 .SYNOPSIS
-Demonstrates mocking a function that updates a hashtable.
+Demonstrates mocking a function that accepts input from the pipeline and updates a hashtable.
 
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1+
 Version:		1.0.0 
-Date:			1 Jan 2025
+Date:			2 Jan 2025
 
 The following scripts belong together:
-* Mocking_FunctionThatUpdatesHashTable.ps1:         Function under test
-* Mocking_FunctionThatUpdatesHashTable.Tests.ps1:   Tests
+* Mocking_PipelineFunction.ps1:        Function under test
+* Mocking_PipelineFunction.Tests.ps1:  Tests
 
 Normally the function under test could be included in the .Tests file, in a BeforeAll block.  However, if you wish to run 
 the function under test manually in the top-level code of a script you'll have to move it to a different file.  This is 
@@ -29,15 +29,24 @@ param ([switch]$InTestContext)
 #region Functions Under Test ***********************************************************************************************
 
 function Update-HashTable (
+    [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
     [hashtable]$HashTable
 )
 {
-    $HashTable.State = "State added"
+    begin
+    {
+        $i = 1
+    }
+    process 
+    {
+        $HashTable.State = "State $i added"
+        $i++
+    }
 }
 
-function Set-Something ([hashtable]$HashTable)
+function Set-Something ([array]$ArrayOfHashTables)
 {
-    Update-HashTable $HashTable
+    $ArrayOfHashTables | Update-HashTable
 }
 
 #endregion Functions Under Test ********************************************************************************************
@@ -48,15 +57,11 @@ function Set-Something ([hashtable]$HashTable)
 
 function Write-Hashtable (
     [Parameter(ValueFromPipeline = $true, Mandatory = $true)]
-    [hashtable]$HashTable, 
-
-    [string]$Title
+    [hashtable]$HashTable
 )
 {
     process
     {
-        Write-Host $Title
-
         # Hashtable.Keys is not sortable so create an array of the keys and sort that.
         $keys = $HashTable.Keys | Sort-Object
         foreach($key in $keys)
@@ -92,21 +97,41 @@ function Write-Hashtable (
     }
 }
 
+function Write-ArrayOfHashTables ([array]$Array, [string]$Title)
+{
+    if ($Title)
+    {
+        $Title = $Title.Trim()
+        if ($Title[-1] -ne ':')
+        {
+            $Title += ':'
+        }
+    }
+    Write-Host $Title
+    
+    $Array | Write-HashTable
+}
+
 # Ensure the script below doesn't run as part of the Pester discovery or run phases.
 if($InTestContext)
 {
     return
 }
 
-$hashtable = @{Name='Name 1'; Description='Description 1'}
+$array = @(
+    @{Name='Name 1'; Description='Description 1'}
+    @{Name='Name 2'; Description='Description 2'}
+    @{Name='Name 3'; Description='Description 3'}
+    @{Name='Name 4'; Description='Description 4'}
+)
 
 Clear-Host 
 
-Write-Hashtable $hashtable 'Initial hashtable'
+Write-ArrayOfHashTables $array 'Initial array'
 
-Set-Something $hashtable
+Set-Something $array
 
-Write-Hashtable $hashtable 'hashtable after update'
+Write-ArrayOfHashTables $array 'Array after update'
 
 #endregion Manual check script script **************************************************************************************
 
