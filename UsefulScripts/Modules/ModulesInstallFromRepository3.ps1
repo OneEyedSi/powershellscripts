@@ -27,8 +27,8 @@ $_moduleRepository = 'PSGallery'
 $_proxyServerUrl = ''
 
 $_detailsOfModulesToInstall = @(
-    @{ Name = 'Pester'; MinimumVersion = '5.5.0'; MaximumVersion = '5.6.1' }
-    @{ Name = 'Pslogg'; RequiredVersion = '3.1.0' }
+    @{ ModuleName = 'Pester'; MinimumVersion = '5.5.0'; MaximumVersion = '5.6.1' }
+    @{ ModuleName = 'Pslogg'; RequiredVersion = '3.1.0' }
 )
 
 #endregion Configuration ***************************************************************************************************
@@ -37,28 +37,43 @@ $_detailsOfModulesToInstall = @(
 
 <#
 .SYNOPSIS
-Copies a specified hashtable.
+Returns a copy of the specified hashtable.
 
 .DESCRIPTION
-Copies a specified hashtable.  It will only copy simple values, such as value types or strings.  It is not able to copy 
-values that are reference types.
+The function assumes the hashtable to copy contains only value types, nested hashtables or arrays.  It will perform a deep 
+copy for those data types.  For reference types it will perform a shallow copy.
 
 .NOTES
 #>
-function Copy-Hashtable ([hashtable]$HashtableToCopy)
+function Copy-HashTable ([hashtable]$HashTable)
 {
-    if ($Null -eq $HashtableToCopy)
+    if ($HashTable -eq $Null)
     {
         return $Null
     }
-    
-    $newHashTable = @{}
-    foreach($key in $HashtableToCopy.Keys)
+
+    if ($HashTable.Keys.Count -eq 0)
     {
-        $newHashTable[$key] = $HashtableToCopy[$key]
+        return @{}
     }
 
-    return $newHashTable
+    $copy = @{}
+    foreach($key in $HashTable.Keys)
+    {
+        $value = $HashTable[$key]
+        if ($value -is [Collections.Hashtable])
+        {
+            $copy[$key] = (Copy-HashTable $value)
+        }
+        else
+        {
+            # Assumes the value of the hashtable element is a value type, not a reference type.
+			# Works also if the value is an array of values types (ie does a deep copy of the array).
+            $copy[$key] = $value
+        }
+    }
+
+    return $copy
 }
 
 <#
@@ -66,96 +81,83 @@ function Copy-Hashtable ([hashtable]$HashtableToCopy)
 Checks whether the specified module is already installed and installs it if it isn't.
 
 .DESCRIPTION
-If the specified module is not already installed the function will attempt to install it assuming it has direct access to 
-the repository.  If that fails it will attempt to install the module via a proxy server.
+If the specified module is not already installed the function will attempt to install it 
+assuming it has direct access to the repository.  If that fails it will attempt to install the 
+module via a proxy server.
 
-If this function installs a module it will be installed for the current user only, not for all users of the computer.
-
-The function accepts input from the pipeline, allowing it to install multiple modules.
-
-.PARAMETER ModuleDetails
-A hashtable with the details of the module to be installed.  The hashtable keys must match the parameter names of the 
-Install-Module cmdlet.  The following keys must be present in the hashtable:
-    1. Name: the name of the module to install.
-Any additional keys are optional.  They will be ignored if they do not match parameter names from Install-Module.  
-
-If 'AllowClobber' is added as a key it will be ignored: The function checks if the module is already installed and will 
-exit if it is, so there will never be an opportunity to overwrite an existing module.
-
-.PARAMETER RepositoryName
-The name of the repository the module will be installed from.
-
-.PARAMETER ProxyUrl
-The URL of a proxy server.  This is only required if this script, when run, is behind a proxy server and doesn't have 
-direct access to the internet.
-
-.INPUTS
-Hashtable
+If this function installs a module it will be installed for the current user only, not for all 
+users of the computer.
 
 .NOTES
+Cannot include logging in this function because it will be used to install the logging module 
+if it's not already installed.
 #>
 function Install-RequiredModule (
+    [Parameter(Position = 0, Mandatory = $true)]
+    [string]$RepositoryName,
 
-    [Parameter(Mandatory = $true)]
-    [string]$RepositoryName, 
-
-    [Parameter(Mandatory = $false)]
+    [Parameter(Position = 1, Mandatory = $false)]
     [string]$ProxyUrl,
 
-    [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
-    [Hashtable]$ModuleDetails
+    [Parameter(ValueFromPipeline = $true, Mandatory = $true, ParameterSetName = 'ModuleName')]
+    [string]$ModuleName,
+
+    [Parameter(ValueFromPipeline = $true, Mandatory = $true, ParameterSetName = 'ModuleDetails')]
+    [hashtable]$ModuleDetails
 )
 {
     process 
     {
-        if (-not $ModuleDetails.ContainsKey('Name'))
+        $moduleText = "'$ModuleName'"
+        $moduleVersionInfo = @{}
+
+        if ($ModuleDetails)
         {
-            throw "No module name specified.  Exiting."
+            $ModuleName = $ModuleDetails.ModuleName
+            $moduleText = "'$ModuleName'"
+            $moduleVersionTextPrefix = ' with '
+
+            foreach($key in $ModuleDetails.Keys)
+            {
+                if ($key -in 'MinimumVersion', 'MaximumVersion', 'RequiredVersion')
+                {
+                    $moduleVersionInfo[$key] = $ModuleDetails[$key]
+                    $moduleText += $moduleVersionTextPrefix + "$key " + $moduleVersionInfo[$key]
+                    $moduleVersionTextPrefix = ' and '
+                }
+            }
         }
 
-        $moduleName = $ModuleDetails.Name
+        Write-Host "Checking whether PowerShell module $moduleText is installed..."
 
-        Write-Host "Checking whether PowerShell module '$moduleName' is installed..."
-
-        $installModuleArguments = Copy-Hashtable $ModuleDetails
-        if (-not $ModuleDetails.MinimumVersion -and -not $ModuleDetails.MaximumVersion `
-            -and -not $ModuleDetails.RequiredVersion)
+        # "Get-InstalledModule -Name <module name>" will throw a non-terminating error if the module 
+        # is not installed.  Don't want to display the error so silently continue.
+        $installedModuleInfo = Get-InstalledModule -Name $ModuleName `
+            -ErrorAction 'SilentlyContinue' -WarningAction 'SilentlyContinue' @moduleVersionInfo
+        if ($installedModuleInfo)
         {
-            $installModuleArguments.AllVersions = $true
-        }
-        
-        $installModuleArguments.ErrorAction = 'SilentlyContinue'
-        $installModuleArguments.WarningAction = 'SilentlyContinue'
-
-        # Get-InstalledModule has many of the same parameter names as Install-Module.
-        # Get-InstalledModule will throw a non-terminating error if the module is not installed.  
-        # Don't want to display the error so silently continue.
-        $argumentsToTestInstallation = Copy-Hashtable $installModuleArguments
-
-        if (Get-InstalledModule @argumentsToTestInstallation)
-        {
-            Write-Host "Module '$moduleName' is installed."
+            Write-Host "Version $($installedModuleInfo.Version) of module '$moduleName' is already installed."
             return
         }
         
-        Write-Host "Installing PowerShell module '$moduleName'..."
-
-        $installModuleArguments.Repository = $RepositoryName 
+        Write-Host "Installing PowerShell module $moduleText..."
 
         # Repository probably has too many modules to enumerate them all to find the name.  So call 
-        # "Find-Module -Repository $RepositoryName -Name $ModuleName" which will raise a non-terminating error if the 
-        # module isn't found.
+        # "Find-Module -Repository $RepositoryName -Name $ModuleName" which will raise a 
+        # non-terminating error if the module isn't found.
 
-        # Silently continue on error because the error message isn't user friendly.  We'll display our own error message if 
-        # needed.
-        if ((Find-Module @installModuleArguments).Count -eq 0)
+        # Silently continue on error because the error message isn't user friendly.  We'll display 
+        # our own error message if needed.
+        if ((Find-Module -Repository $RepositoryName -Name $ModuleName `
+                    -ErrorAction 'SilentlyContinue' -WarningAction 'SilentlyContinue' @moduleVersionInfo).Count -eq 0)
         {
-            throw "Module '$moduleName' not found in repository '$RepositoryName'.  Exiting."
+            throw "Module $moduleText not found in repository '$RepositoryName'.  Exiting."
         }
 
         try
         {
-            # Ensure the repository is trusted otherwise the user will get an "untrusted repository" warning message.
+            # Ensure the repository is trusted otherwise the user will get an "untrusted repository"
+            # warning message.
             $repositoryInstallationPolicy = (Get-PSRepository -Name $RepositoryName |
                 Select-Object -ExpandProperty InstallationPolicy)
             if ($repositoryInstallationPolicy -ne 'Trusted')
@@ -165,19 +167,26 @@ function Install-RequiredModule (
         }
         catch 
         {
-            throw "Unable to set installation policy for repository '$RepositoryName'.  Exiting."
+            throw "Module repository '$RepositoryName' not found.  Exiting."
         }
+
+        $optionalInstallParameters = Copy-HashTable $moduleVersionInfo
+        if ($moduleVersionInfo.Keys.Count -gt 0)
+        {
+            # Set the Force and AllowClobber parameters so Install-Module will install the specified version even if there 
+            # are previously installed versions.
+            $optionalInstallParameters.Force = $true
+            $optionalInstallParameters.AllowClobber = $true
+        }     
         
         try
-        {     
-            # If Install-Module fails because it's behind a proxy we want to fail silently, without displaying any message 
-            # to scare the user.  
-            # Errors from Install-Module are non-terminating.  They won't be caught using try - catch unless ErrorAction is 
-            # set to Stop. 
-            $installModuleArguments.ErrorAction = 'Stop'
-            $installModuleArguments.Scope = 'CurrentUser'
-
-            Install-Module @installModuleArguments
+        {   
+            # If Install-Module fails because it's behind a proxy we want to fail silently, without 
+            # displaying any message to scare the user.  
+            # Errors from Install-Module are non-terminating.  They won't be caught using try - catch 
+            # unless ErrorAction is set to Stop. 
+            Install-Module -Name $ModuleName -Repository $RepositoryName `
+                -Scope 'CurrentUser' -ErrorAction 'Stop' -WarningAction 'SilentlyContinue' @optionalInstallParameters
         }
         catch 
         {
@@ -185,31 +194,38 @@ function Install-RequiredModule (
 
             if ([string]::IsNullOrWhiteSpace($ProxyUrl))
             {
-                throw "Unable to install module '$moduleName' directly and no proxy server details supplied.  Exiting."
+                throw "Unable to install module $moduleText directly and no proxy server details supplied.  Exiting."
             }
 
             $proxyCredential = Get-Credential -Message 'Please enter credentials for proxy server'
-            $installModuleArguments.Proxy = $ProxyUrl
-            $installModuleArguments.ProxyCredential = $proxyCredential
 
             # No need to Silently Continue this time.  We want to see the error details.  Convert 
             # non-terminating errors to terminating via ErrorAction Stop.   
-
-            Install-Module @installModuleArguments
+            Install-Module -Name $ModuleName -Repository $RepositoryName `
+                -Proxy $ProxyUrl -ProxyCredential $proxyCredential `
+                -Scope 'CurrentUser' -ErrorAction 'Stop' @optionalInstallParameters
         }
 
-        if (-not (Get-InstalledModule @argumentsToTestInstallation))
+        $installedModuleInfo = Get-InstalledModule -Name $ModuleName -ErrorAction 'SilentlyContinue' @moduleVersionInfo
+
+        if (-not $installedModuleInfo)
         {
-            throw "Unknown error installing module '$moduleName' from repository '$RepositoryName'.  Exiting."
+            throw "Unknown error installing module $moduleText from repository '$RepositoryName'.  Exiting."
         }
 
-        Write-Host "Module '$moduleName' successfully installed."
+        Write-Host "Version $($installedModuleInfo.Version) of module '$moduleName' successfully installed."
     }
 }
 
 #endregion Functions *******************************************************************************************************
 
 #region Main script ********************************************************************************************************
+
+# Ensure main script doesn't auto-run when dot sourced into a Pester test script.
+if($InTestContext)
+{
+    return
+}
 
 $_detailsOfModulesToInstall | Install-RequiredModule -RepositoryName $_moduleRepository -ProxyUrl $_proxyServerUrl
 
