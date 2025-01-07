@@ -6,11 +6,10 @@
 {
     if (-not $FirstArg)
     {
-        Write-Host 'No FirstArg specified.'
+        Write-Host 'No FirstArg.'
         return
     }
 
-    Write-Host "FirstArg type: $($FirstArg.GetType().FullName)"
     Write-Host "FirstArg: $FirstArg"
 
     if (-not $SecondArg)
@@ -19,8 +18,7 @@
         return
     }
 
-    Write-Host "SecondArg type: $($SecondArg.GetType().FullName)"
-    Write-Host "SecondArg: $SecondArg"
+   Write-Host "SecondArg: $SecondArg"
 
     if (-not $ThirdArg)
     {
@@ -28,7 +26,6 @@
         return
     }
 
-    Write-Host "ThirdArg type: $($ThirdArg.GetType().FullName)"
     Write-Host "ThirdArg: $ThirdArg"
 }
 
@@ -100,6 +97,10 @@ Clear-Host
                                 'two'
                                 'three'
                             )
+[System.Object[]]$array3 = @(
+                                'one'
+                                'two'
+                            )
 
 Write-Title 'Array with fewer elements than the function parameters'
 Call-ViaSplatting $array1
@@ -118,6 +119,10 @@ $hashtable2 = @{
                     ThirdArg = 'two'
                     FourthArg = 'three'
                 }
+$hashtable3 = @{
+                    SecondArg = 'one'
+                    ThirdArg = 'two'
+                }
 
 Write-Host
 Write-Title 'Hash table with fewer elements than the function parameters'
@@ -127,21 +132,34 @@ Write-Host
 Write-Title 'Hash table with more elements than the function parameters'
 Call-ViaSplatting $hashtable2
 
+Write-Host
+Write-Title 'Call with mixture of positional and splatted array arguments'
+MyFunction 'zero' @array3
+
+Write-Host
+Write-Title 'Call with mixture of positional and splatted hashtable arguments'
+MyFunction 'zero' @hashtable3
+
+Write-Host
+Write-Title 'Call with mixture of named and splatted array arguments'
+MyFunction -FirstArg 'zero' @array3
+
+Write-Host
+Write-Title 'Call with mixture of named and splatted hashtable arguments'
+MyFunction -FirstArg 'zero' @hashtable3
+
 <# Result:
 
 Array with fewer elements than the function parameters
 ======================================================
 Pass array as $array (note the '$'):
 ------------------------------------
-FirstArg type: System.String
 FirstArg: zero one
 No SecondArg.
 
 Pass array as @array (note the '@'):
 ------------------------------------
-FirstArg type: System.String
 FirstArg: zero
-SecondArg type: System.String
 SecondArg: one
 No ThirdArg.
 
@@ -149,32 +167,25 @@ Array with more elements than the function parameters
 =====================================================
 Pass array as $array (note the '$'):
 ------------------------------------
-FirstArg type: System.String
 FirstArg: zero one two three
 No SecondArg.
 
 Pass array as @array (note the '@'):
 ------------------------------------
-FirstArg type: System.String
 FirstArg: zero
-SecondArg type: System.String
 SecondArg: one
-ThirdArg type: System.String
 ThirdArg: two
 
 Hash table with fewer elements than the function parameters
 ===========================================================
 Pass hash table as $hashtable (note the '$'):
 ---------------------------------------------
-FirstArg type: System.String
 FirstArg: System.Collections.Hashtable
 No SecondArg.
 
 Pass hash table as @hashtable (note the '@'):
 ---------------------------------------------
-FirstArg type: System.String
 FirstArg: zero
-SecondArg type: System.String
 SecondArg: one
 No ThirdArg.
 
@@ -182,17 +193,37 @@ Hash table with more elements than the function parameters
 ==========================================================
 Pass hash table as $hashtable (note the '$'):
 ---------------------------------------------
-FirstArg type: System.String
 FirstArg: System.Collections.Hashtable
 No SecondArg.
 
 Pass hash table as @hashtable (note the '@'):
 ---------------------------------------------
-FirstArg type: System.String
 FirstArg: zero
-SecondArg type: System.String
 SecondArg: one
-ThirdArg type: System.String
+ThirdArg: two
+
+Call with mixture of positional and splatted array arguments
+============================================================
+FirstArg: zero
+SecondArg: one
+ThirdArg: two
+
+Call with mixture of positional and splatted hashtable arguments
+================================================================
+FirstArg: zero
+SecondArg: one
+ThirdArg: two
+
+Call with mixture of named and splatted array arguments
+=======================================================
+FirstArg: zero
+SecondArg: one
+ThirdArg: two
+
+Call with mixture of named and splatted hashtable arguments
+===========================================================
+FirstArg: zero
+SecondArg: one
 ThirdArg: two
 
 #>
