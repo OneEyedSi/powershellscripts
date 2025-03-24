@@ -45,11 +45,14 @@ In addition to highlighting projects with colour, you can use $_showLevelNumbers
 "(level nnn)" to each node, where nnn is the level in the hierarchy, counting from 0 at the 
 top-level projects.  
 
+The target frameworks (ie the .NET versions each project can be compiled against) can be included 
+for each project by setting $_showTargetFrameworks $true.
+
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
-Version:		2.1.1 
-Date:			9 December 2024
+Version:		3.0.0
+Date:			25 Mar 2025
 
 For a generalised script for creating a Yuml.me dependency graph from arbitrary parent-child 
 pairs, see DemosAndExperiments/DEMO_Hierarchy_GetYumlCodeForDependencyGraph.ps1 in the 
@@ -57,16 +60,17 @@ PowerShell repository.
 
 #>
 
-$_solutionFilePath = "C:\Working\SourceControl\Smartly\API\Integration.sln"
+$_solutionFilePath = "C:\Working\SourceControl\Smartly\PIProject\PIGateway.sln"
 
-$_projectNamesToHighlight = @('Smartly.Workflow.API'
-)                            
-$_highlightNodesAbove = $false
-$_highlightNodesBelow = $true
+$_projectNamesToHighlight = @()                            
+$_highlightNodesAbove = $true
+$_highlightNodesBelow = $false
 $_showOnlyHighlightedNodes = $true
 
 # Ignored if _projectNamesToHighlight set.
 $_useColours = $true
+
+$_showTargetFrameworks = $true
 
 # -------------------------------------------------------------------------------------------------
 # No changes needed below this point; the remaining code is generic.
@@ -102,7 +106,8 @@ function PipelineGetAbsolutePath
 
         if ($pathIsAbsolute)
         {
-            return $Path
+            $absolutePaths += $Path
+            return 
         }
 
         # Even if path is outside of the solution tree, eg "..\..\..\myproject.csproj", we can still 
@@ -132,7 +137,15 @@ function NewProjectInfo
     $ProjectId     
 )
 {
-    $projectInfo = @{name = $ProjectName; filePath = $ProjectFilePath; hierarchyLevel = $null; isHighlighted = $false }
+    $projectInfo = 
+    @{
+        name = $ProjectName 
+        filePath = $ProjectFilePath
+        hierarchyLevel = $null
+        isHighlighted = $false
+        targetFrameworks = $null
+    }
+
     if ($ProjectId)
     {
         $projectInfo.id = $ProjectId
@@ -780,6 +793,54 @@ function PipelineGetNSwagCodeGenProjectRelationship
     }
 }
 
+function PipelineGetNetTargetFramework 
+(    
+    [Parameter(Position = 0, 
+    Mandatory = $true, 
+    ValueFromPipeline = $true)]
+    $ProjectInfo
+)
+{
+    begin 
+    {
+        $allProjectInfo = @()
+    }
+
+    process
+    {
+        $projectFileName = $ProjectInfo.filePath
+
+        $xmlDoc = new-object xml
+        $xmlDoc.load($projectFileName)
+        
+        # For some reason this sometimes returns an array which includes one or more nulls as well as the 
+        # target framework.  So get rid of the nulls and join any remaining items.
+        $targetFrameworks = $xmlDoc.Project.PropertyGroup.TargetFramework.Where{ $_ -ne $null } -join ';'
+        if (-not $targetFrameworks)
+        {
+            $targetFrameworks = $xmlDoc.Project.PropertyGroup.TargetFrameworks.Where{ $_ -ne $null } -join ';'
+        }
+        
+        # For .NET Framework projects.
+        if (-not $targetFrameworks)
+        {
+            $targetFrameworks = $xmlDoc.Project.PropertyGroup.TargetFrameworkVersion.Where{ $_ -ne $null } -join ';'
+        }
+
+        if ($targetFrameworks)
+        {
+            $ProjectInfo.targetFrameworks = $targetFrameworks.Trim()
+        }
+
+        $allProjectInfo += $ProjectInfo
+    }
+
+    end
+    {
+        return $allProjectInfo
+    }
+}
+
 function GetHierarchyLevelColour($LevelNumber)
 {
     $colours = @('magenta', 'mediumblue', 'cyan', `
@@ -979,12 +1040,17 @@ function PipelineGetYumlNode
         $name = $ProjectInfo.name
         $isHighlighted = $ProjectInfo.isHighlighted
         $hierarchyLevel = $ProjectInfo.hierarchyLevel
+        $targetFrameworks = $ProjectInfo.targetFrameworks
 
         $node = "[$name]"
         if ($isHighlighted)
         {
             $colour = GetHierarchyLevelColour $hierarchyLevel
             $node = "[$name{bg:$colour}]"
+            if ($targetFrameworks)
+            {
+                $node = "[$name;$targetFrameworks{bg:$colour}]"
+            }
         }
 
         $nodes += $node
@@ -1038,12 +1104,17 @@ function PipelineGetYumlRelationship
 
 function GenerateProjectDependencyGraph($SolutionFilePath, $ProjectNamesToHighlight, 
     [bool]$HighlightNodesAbove, [bool]$HighlightNodesBelow, [bool]$ShowOnlyHighlightedNodes, 
-    [bool]$UseColours)
+    [bool]$UseColours, [bool]$ShowTargetFrameworks)
 {
     $allProjectInfo = GetAllProjectInfo $SolutionFilePath
 
     $allProjectInfo, $allProjectRelationships = $allProjectInfo | PipelineGetProjectRelationship $allProjectInfo
     SetHierarchyLevels $allProjectInfo $allProjectRelationships
+
+    if ($ShowTargetFrameworks)
+    {
+        $allProjectInfo = $allProjectInfo | PipelineGetNetTargetFramework
+    }
 
     # Projects that do not depend on other projects and do not have other projects depend on them.
     $isolatedProjectsInfo = GetIsolatedProjectInfo $allProjectInfo $allProjectRelationships
@@ -1092,4 +1163,4 @@ function GenerateProjectDependencyGraph($SolutionFilePath, $ProjectNamesToHighli
 
 Clear-Host
 GenerateProjectDependencyGraph $_solutionFilePath $_projectNamesToHighlight `
-    $_highlightNodesAbove $_highlightNodesBelow $_showOnlyHighlightedNodes $_useColours
+    $_highlightNodesAbove $_highlightNodesBelow $_showOnlyHighlightedNodes $_useColours $_showTargetFrameworks
