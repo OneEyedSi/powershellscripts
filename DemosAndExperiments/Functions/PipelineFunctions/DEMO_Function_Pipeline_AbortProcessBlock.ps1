@@ -262,6 +262,39 @@ function Invoke-PipelineTest6
     }
 }
 
+function Invoke-PipelineTest7
+{
+    # Attempts to aggregate the values received from the pipeline but throws if the value is 3.
+    param (
+        [Parameter(
+            Position=0,
+            Mandatory=$true,
+            ValueFromPipeline=$true)
+        ]
+        $PipelineValue
+    )
+
+    Begin
+    {
+        $aggregateValue = $PipelineValue
+    }
+
+    Process
+    {       
+        if ($PipelineValue -eq 3)
+        {
+            throw "Throwing on 3"
+        } 
+
+        $aggregateValue += $PipelineValue
+    }
+
+    End
+    {
+        return $aggregateValue
+    }
+}
+
 function Write-Title ($Title)
 {
     Write-Host
@@ -382,6 +415,21 @@ for($i = 0; $i -lt $result.Count; $i++)
 # Write-Result $result
 # Write-Duration $startTime
 
+Write-Title 'TEST 7:'
+Write-Host 'Fails to return aggregate result as throws part way through the pipeline, aborting it:'
+$startTime = Get-Date
+$result = $null
+try 
+{
+    $result = (1..4 | Invoke-PipelineTest7)
+}
+catch 
+{
+    Write-Host "Captured error: $($_.Exception.Message)"
+}
+$result
+Write-Duration $startTime
+
 Write-Title 'TEST 6:'
 Write-Host 'Should process each pipeline object, returning 10:'
 $startTime = Get-Date
@@ -394,5 +442,5 @@ $result = (1..4 | Invoke-PipelineTest6 $false)
 Write-Result $result
 Write-Duration $startTime
 
-# This is never reached since TEST 5 aborts execution.
+# Never runs as Invoke-Pipeline6 terminates execution.
 Write-Host 'End'
