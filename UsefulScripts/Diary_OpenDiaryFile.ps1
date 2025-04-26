@@ -5,6 +5,9 @@ Opens the current diary file.
 .DESCRIPTION
 Opens the current diary file.  If the diary file doesn't exist it will be created and then opened.
 
+The $_year variable at the head of the script can be set to a specific year to open the diary for that year.  For example:
+    $_year = 2023
+
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
