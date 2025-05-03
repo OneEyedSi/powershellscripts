@@ -1,30 +1,47 @@
 <#
 .SYNOPSIS
-By default, opens a timesheet spreadsheet in Excel for the current timesheet period and creates 
-it if it doesn't exist.  Optionally, spreadsheets from past or future weeks may be opened instead.
+By default, opens a timesheet spreadsheet in Excel for the current timesheet week, creating it 
+if it doesn't exist.  Optionally, spreadsheets from past or future weeks may be opened instead.
 
 .DESCRIPTION
 Opens one or two timesheet spreadsheets in Excel.  Normally there is only one spreadsheet per 
-timesheet period.  However, if month-end falls during the timesheet period there will be two 
-timesheets: one for the old month and one for the new.  
+timesheet week.  However, if month-end falls during the timesheet week there may be two 
+timesheets: one for the old month and one for the new.
 
-For the current timesheet period normally only the spreadsheet applicable to the current day 
-will be opened.  If month-end falls during the week, and the current day is before month-end, 
-then the spreadsheet for the old month will be opened.  If the current day is after month-end 
-then the spreadsheet for the new month will be opened. 
+The script supports two timesheet patterns:
+1. One timesheet per week, regardless of whether month-end falls within the timesheet week or not. 
+2. One timesheet per week, except when month-end falls within the timesheet week.  In that case 
+there will be two timesheets in the week, one for the old month and a second for the new month.
 
-For example, if the timesheet period starts on Monday 29 August 2022 and the current date is 
-31 August 2022 then spreadsheet "Timesheets_WeekStarting_20220829.xlsx" would be opened.  Next 
-day, on 1 September 2022 (which is in the same week/timesheet period), spreadsheet 
-"Timesheets_WeekStarting_20220829_NewMonth.xlsx" would be opened.
+Which pattern is followed is determined by switch parameter -SplitWeekAtStartOfMonth.  If this 
+switch parameter is not set then only one timesheet will be created for the timesheet week that 
+month-end falls in.  If -SplitWeekAtStartOfMonth is set then a second timesheet will be created 
+when month-end falls within the timesheet week.
 
-Switch parameter -ShowPreviousMonthTimesheet can be used after month-end in the current 
-timesheet period to open the spreadsheet for the old month, as well as the spreadsheet for 
-the new month.  In the above example, if -ShowPreviousMonthTimesheet is set, both spreadsheets 
-"Timesheets_WeekStarting_20220829.xlsx" and "Timesheets_WeekStarting_20220829_NewMonth.xlsx" 
-would be opened.
+Regardless of whether -SplitWeekAtStartOfMonth is set or not, for the current timesheet week 
+normally only the spreadsheet applicable to the current day will be opened.  If 
+-SplitWeekAtStartOfMonth is set and month-end falls during the week, and the current day is before 
+month-end, then the spreadsheet for the old month will be opened.  If the current day is after 
+month-end then the spreadsheet for the new month will be opened. 
 
-If the spreadsheet for the current timesheet period doesn't exist then the script will create it 
+For example, if -SplitWeekAtStartOfMonth is set and the timesheet week starts on Monday 
+29 August 2022 and the current date is 31 August 2022 then spreadsheet 
+"Timesheets_WeekStarting_20220829.xlsx" is opened.  Next day, on 1 September 2022 (which is 
+in the same timesheet week), spreadsheet "Timesheets_WeekStarting_20220829_NewMonth.xlsx" would be 
+opened.
+
+Switch parameter -ShowPreviousMonthTimesheet only applies if -SplitWeekAtStartOfMonth is set. 
+If -SplitWeekAtStartOfMonth is set then -ShowPreviousMonthTimesheet can be used after month-end in 
+the current timesheet week to open the spreadsheet for the old month, as well as the spreadsheet 
+for the new month.  
+
+In the above example on 1 September 2022, if both -SplitWeekAtStartOfMonth and 
+-ShowPreviousMonthTimesheet were set, both spreadsheets "Timesheets_WeekStarting_20220829.xlsx" and 
+"Timesheets_WeekStarting_20220829_NewMonth.xlsx" would be opened.  If -ShowPreviousMonthTimesheet 
+were not set then only spreadsheet "Timesheets_WeekStarting_20220829_NewMonth.xlsx" would be 
+opened.
+
+If the spreadsheet for the current timesheet week doesn't exist then the script will create it 
 by copying the specified template file and giving the copied spreadsheet the appropriate name.  
 The new spreadsheet will then be opened.
 
@@ -50,27 +67,41 @@ If a spreadsheet for a future week does not exist then it will be created.
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5 or greater (tested on versions 5.1 and 7.2.6)
-Version:		3.0.0
-Date:			13 Aug 2023
+Version:		3.1.0
+Date:			3 May 2025
 
 ---------------------------------------------------------------------------------------------------
-Licence (ISC Licence):
+Licence (MIT Licence):
 ----------------------------------
 Copyright (c) 2021 by Simon Elms
 
-Permission to use, copy, modify, and/or distribute this software for any purpose with or 
-without fee is hereby granted, provided that the above copyright notice and this permission 
-notice appear in all copies.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software 
+and associated documentation files (the "Software"), to deal in the Software without 
+restriction, including without limitation the rights to use, copy, modify, merge, publish, 
+distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the 
+Software is furnished to do so, subject to the following conditions:
 
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS 
-SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE 
-AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES 
-WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, 
-NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR 
-PERFORMANCE OF THIS SOFTWARE.
+The above copyright notice and this permission notice shall be included in all copies or 
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING 
+BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, 
+DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ---------------------------------------------------------------------------------------------------
 Revisions:
 ----------
+Versioning scheme (Semantic Versioning): major.minor.patch
+	Major number: incremented for breaking changes (mainly if parameters are removed or changed);
+	Minor number: incremented for non-breaking changes;
+	Patch number: incremented for changes that don't affect functionality (for example, changes to 
+                    comments) or for bug fixes.
+----------
+3.1.0   2 May 2025      Simon Elms      Add parameter -SplitWeekAtStartOfMonth to allow for a 
+                                        second timesheet pattern, which has only one timesheet 
+                                        for a timesheet week that includes month-end.
+
 3.0.0   13 Aug 2023     Simon Elms      Replace script parameter -NumberOfWeeksInPast with 
                                         -NumberOfWeeksOffset to allow future spreadsheets to be 
                                         opened.
@@ -123,9 +154,9 @@ script.
 The pattern used to determine the filename of the timesheet spreadsheet to open.
 
 Valid placeholders:
-    {start date}:       The start date of the timesheet period.
+    {start date}:       The start date of the timesheet week.
 
-    {new month text}:   If month-end falls in a timesheet period then two timesheets will exist, 
+    {new month text}:   If month-end falls in a timesheet week then two timesheets will exist, 
                         for the old month and the new one.  The two timesheet filenames will be 
                         almost identical, but will be distinguished by the text replacing the 
                         {new month text} placeholder.
@@ -142,19 +173,29 @@ setting -NumberOfWeeksOffset -1 will open the spreadsheet(s) from last week.
 Leaving -NumberOfWeeksOffset unset, or setting it to 0, will open the spreadsheet(s) for the 
 current week.
 
+.PARAMETER SplitWeekAtStartOfMonth
+Setting -SplitWeekAtStartOfMonth will create a new spreadsheet on the first day of the month, 
+if the first day of the month falls in the middle of a working week.  If this parameter were not 
+set then, on the first of the month, the same timesheet that was created at the start of the week 
+would be opened.
+
 .PARAMETER ShowPreviousMonthTimesheet
-If the current timesheet period includes month-end, and the current date is after month-end, then 
+If the current timesheet week includes month-end, and the current date is after month-end, then 
 setting -ShowPreviousMonthTimesheet will open both spreadsheets for the current week: The one for 
 the old month as well as the one for the new month.  If this parameter were not set then only the 
 spreadsheet for the new month would be opened (since the current date is in the new month).
 
+This parameter has no effect if the current timesheet week does not include month-end.  In that 
+case there would be only one spreadsheet for the week, and that spreadsheet would be opened 
+regardless of whether -ShowPreviousMonthTimesheet were set or not.
+
+This parameter has no effect if parameter -SplitWeekAtStartOfMonth is not set.  In that case there 
+would be only one spreadsheet for the week, and that spreadsheet would be opened regardless of 
+whether -ShowPreviousMonthTimesheet were set or not.
+
 This parameter has no effect if the current date is before month-end.  In that case only the 
 spreadsheet for the old month would be opened (since the new month has not started yet).  
 -ShowPreviousMonthTimesheet would be ignored.
-
-This parameter has no effect if the current timesheet period does not include month-end.  In that 
-case there would be only one spreadsheet for the week, and that spreadsheet would be opened 
-regardless of whether -ShowPreviousMonthTimesheet were set or not.
 
 This parameter has no effect on spreadsheets from past weeks.  If opening the spreadsheets for a 
 past week that includes month-end, both spreadsheets for that week would be opened, the one for 
@@ -170,19 +211,32 @@ Param
   [string]$TimesheetTemplateFilePath = '.\Timesheets_WeekStarting_BLANK_*.xlsx',
   [string]$TimesheetFilePattern = 'C:\Users\SimonE\OneDrive - Datacom\Working\Datacom\Timesheets\Timesheets_WeekStarting_{start date}{new month text}.xlsx',
   [int]$NumberOfWeeksOffset,
+  [switch]$SplitWeekAtStartOfMonth,
   [switch]$ShowPreviousMonthTimesheet
 )
 
-function Test-PathIsAbsolute ($Path)
-{
-    # Can't use [system.io.path]::IsPathFullyQualified($Path) as that was introduced in .NET Core 2.1 
-    # and Windows PowerShell 5.1 is built on top of .NET Framework 4.5.
+# --------------------------------------------------------------------------------------------------------------------------
+# No changes needed below this point; the remaining code is generic.
+# --------------------------------------------------------------------------------------------------------------------------
 
-    # [system.io.path]::IsPathRooted($Path) considers paths that start with a separator, such as 
-    # "\MyFolder\Myfile.txt" to be rooted.  So we can't use IsPathRooted by itself to determine if a 
-    # path is absolute or not.
-    # Following code based on Stackoverflow answer https://stackoverflow.com/a/35046453/216440
-    
+<#
+.SYNOPSIS
+Determines whether the specified path is an absolute path or a relative one.
+
+.DESCRIPTION
+
+.NOTES
+We cannot use [system.io.path]::IsPathFullyQualified($Path) as that was introduced in .NET Core 2.1 
+and Windows PowerShell 5.1 is built on top of .NET Framework 4.5.
+
+[system.io.path]::IsPathRooted($Path) considers paths that start with a separator, such as 
+"\MyFolder\Myfile.txt" to be rooted.  So we can't use IsPathRooted by itself to determine if a path 
+is absolute or not.
+
+This function is based on Stackoverflow answer https://stackoverflow.com/a/35046453/216440.
+#>
+function Test-PathIsAbsolute ([string]$Path)
+{
     # GetPathRoot('\\MyServer\MyFolder\MyFile.txt') returns '\\MyServer\MyFolder', not a separator 
     # character.
     $pathRoot = [system.io.path]::GetPathRoot($Path)    
@@ -193,7 +247,16 @@ function Test-PathIsAbsolute ($Path)
     return $isPathAbsolute
 }
 
-function Get-AbsolutePath ($Path)
+<#
+.SYNOPSIS
+Converts the specified path to an absolute path.
+
+.DESCRIPTION
+If the specified path is absolute it is returned unchanged.  If the specified path is relative it 
+will be converted to absolute.  Relative paths are considered to be rooted on the folder 
+containing this script when it runs.
+#>
+function Get-AbsolutePath ([string]$Path)
 {
     if (-not $Path)
     {
@@ -218,17 +281,25 @@ function Get-AbsolutePath ($Path)
 <#
 .SYNOPSIS
 Determines whether to show the new month's timesheet, if month-end falls within the given 
-timesheet period.
+timesheet week.
 
 .DESCRIPTION
-Will only return true if the specified timesheet is the current timesheet period or a past one, 
-and month-end falls withing that timesheet period.  Will always return false for future timesheet 
-periods, regardless of whether month-end falls within the timesheet period or not.  This is based 
-on the assumption that the user is unlikely to need to view any timesheets after the first future 
-one.
+If -SplitWeekAtStartOfMonth is false then the function will always return $false.  Otherwise, it 
+will only return $true if the specified timesheet is in the current timesheet week or a past 
+one, and month-end falls withing that timesheet week.  
+
+The function will always return $false for future timesheet weeks, regardless of whether 
+month-end falls within the timesheet week or not.  This is based on the assumption that the 
+user is unlikely to need to view any timesheets after the first future one.
 #>
-function Test-ShowNewMonthTimesheetForWeek ($TimesheetStartDate)
+function Test-ShowNewMonthTimesheetForWeek ([datetime]$TimesheetStartDate, 
+    [switch]$SplitWeekAtStartOfMonth)
 {
+    if (-not $SplitWeekAtStartOfMonth)
+    {
+        return $false
+    }
+
     $timesheetEndDate = $TimesheetStartDate.AddDays(6)
     $testDate = $timesheetEndDate
     $currentDate = (Get-Date).Date
@@ -245,8 +316,8 @@ function Test-ShowNewMonthTimesheetForWeek ($TimesheetStartDate)
 
 <#
 .SYNOPSIS
-Gets the start date of the timesheet period, as well as whether a timesheet should be displayed 
-for the new month, if month-end falls during the specified timesheet period.
+Gets the start date of the timesheet week, as well as whether a timesheet should be displayed 
+for the new month, if month-end falls during the specified timesheet week.
 
 .DESCRIPTION
 If -NumberOfWeeksOffset is not supplied or is 0 then the start date of the current timesheet is 
@@ -256,8 +327,11 @@ it will return the date of the Monday within the last week.
 If -NumberOfWeeksOffset is a positive integer then the date returned will be n weeks after the 
 most recent Monday, where n is the value of -NumberOfWeeksOffset.  If -NumberOfWeeksOffset is a 
 negative integer then the date returned will be n weeks before the most recent Monday.
+
+If -SplitWeekAtStartOfMonth is not set then the value of ShowNewMonthTimesheet returned will 
+always be $false.
 #>
-function Get-TimesheetDateInfo ([int]$NumberOfWeeksOffset)
+function Get-TimesheetDateInfo ([int]$NumberOfWeeksOffset, [switch]$SplitWeekAtStartOfMonth)
 {
     $currentDate = (Get-Date).Date
     $referenceDate = $currentDate
@@ -272,7 +346,8 @@ function Get-TimesheetDateInfo ([int]$NumberOfWeeksOffset)
     $daysFromMonday = ($referenceDate.DayOfWeek.value__ + 6) % 7
 
     $timesheetStartDate = $referenceDate.AddDays(-1 * $daysFromMonday)
-    $showNewMonthTimesheet = Test-ShowNewMonthTimesheetForWeek -TimesheetStartDate $timesheetStartDate
+    $showNewMonthTimesheet = Test-ShowNewMonthTimesheetForWeek `
+        -TimesheetStartDate $timesheetStartDate -SplitWeekAtStartOfMonth:$SplitWeekAtStartOfMonth
 
     return @{
                 TimesheetPeriodStartDate = $timesheetStartDate
@@ -432,7 +507,8 @@ function Open-Spreadsheet ($TimesheetTemplateFilePath, $TimesheetFilePath, $IsIn
 }
 
 function Open-TimesheetFile ($TimesheetTemplateFilePath, $TimesheetFilePattern, 
-    [int]$NumberOfWeeksOffset, [switch]$ShowPreviousMonthTimesheet)
+    [int]$NumberOfWeeksOffset, [switch]$SplitWeekAtStartOfMonth, 
+    [switch]$ShowPreviousMonthTimesheet)
 {
     $TimesheetTemplateFilePath = Get-AbsolutePath -Path $TimesheetTemplateFilePath
     $TimesheetFilePattern = Get-AbsolutePath -Path $TimesheetFilePattern
@@ -440,15 +516,16 @@ function Open-TimesheetFile ($TimesheetTemplateFilePath, $TimesheetFilePattern,
     $isInPastTimesheetPeriod = ($NumberOfWeeksOffset -lt 0)
     $isInFutureTimesheetPeriod = ($NumberOfWeeksOffset -gt 0)
 
-    $timesheetDateInfo = Get-TimesheetDateInfo $NumberOfWeeksOffset
+    $timesheetDateInfo = Get-TimesheetDateInfo -NumberOfWeeksOffset $NumberOfWeeksOffset `
+        -SplitWeekAtStartOfMonth:$SplitWeekAtStartOfMonth
 
-    $showTimesheetFromStartOfWeek = $ShowPreviousMonthTimesheet
+    $showTimesheetFromStartOfWeek = $SplitWeekAtStartOfMonth -and $ShowPreviousMonthTimesheet
 
-    # For previous timesheet periods always show the timesheet from the start of the timesheet 
-    # period (there may be two timesheets if month-end falls during the timesheet period).
-    # For the current timesheet period always show the timesheet from the start of the timesheet 
+    # For previous timesheet weeks always show the timesheet from the start of the timesheet 
+    # period (there may be two timesheets if month-end falls during the timesheet week).
+    # For the current timesheet week always show the timesheet from the start of the timesheet 
     # period if there is no second timesheet to display.
-    # For future timesheet periods always show the timesheet from the start of the timesheet 
+    # For future timesheet weeks always show the timesheet from the start of the timesheet 
     # period.
     if ($isInPastTimesheetPeriod -or $isInFutureTimesheetPeriod -or 
         -not $timesheetDateInfo.ShowNewMonthTimesheet)
@@ -465,7 +542,7 @@ function Open-TimesheetFile ($TimesheetTemplateFilePath, $TimesheetFilePattern,
             -TimesheetFilePath $timesheetFilePath -IsInPastTimesheetPeriod $isInPastTimesheetPeriod
     }
     
-    # If month-end occurs during the timesheet period and it's past month-end then display the 
+    # If month-end occurs during the timesheet week and it's past month-end then display the 
     # timesheet for the new month.
     if ($timesheetDateInfo.ShowNewMonthTimesheet)
     {
@@ -483,6 +560,7 @@ Clear-Host
 Open-TimesheetFile -TimesheetTemplateFilePath $TimesheetTemplateFilePath `
     -TimesheetFilePattern $TimesheetFilePattern `
     -NumberOfWeeksOffset $NumberOfWeeksOffset `
+    -SplitWeekAtStartOfMonth:$SplitWeekAtStartOfMonth `
     -ShowPreviousMonthTimesheet:$ShowPreviousMonthTimesheet
 
 
