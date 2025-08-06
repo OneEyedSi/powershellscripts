@@ -51,8 +51,8 @@ for each project by setting $_showTargetFrameworks $true.
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
-Version:		3.0.0
-Date:			25 Mar 2025
+Version:		3.0.1
+Date:			7 Aug 2025
 
 For a generalised script for creating a Yuml.me dependency graph from arbitrary parent-child 
 pairs, see DemosAndExperiments/DEMO_Hierarchy_GetYumlCodeForDependencyGraph.ps1 in the 
@@ -813,17 +813,21 @@ function PipelineGetNetTargetFramework
         $xmlDoc = new-object xml
         $xmlDoc.load($projectFileName)
         
-        # For some reason this sometimes returns an array which includes one or more nulls as well as the 
-        # target framework.  So get rid of the nulls and join any remaining items.
+        # Getting the value of $xmlDoc.Project.PropertyGroup... will return one value for each PropertyGroup element, 
+        # regardless of whether it contains a TargetFramework / TargetFrameworks / TargetFrameworkVersion element.
+        # The values returned for PropertyGroups without a target framework are $null.  Get rid of the nulls and join 
+        # any remaining items.
+
+        # Single target framework - "TargetFramework" singular.
         $targetFrameworks = $xmlDoc.Project.PropertyGroup.TargetFramework.Where{ $_ -ne $null } -join ';'
         if (-not $targetFrameworks)
         {
+            # Multiple target frameworks - "TargetFrameworks" plural.
             $targetFrameworks = $xmlDoc.Project.PropertyGroup.TargetFrameworks.Where{ $_ -ne $null } -join ';'
         }
-        
-        # For .NET Framework projects.
         if (-not $targetFrameworks)
         {
+            # For .NET Framework projects.
             $targetFrameworks = $xmlDoc.Project.PropertyGroup.TargetFrameworkVersion.Where{ $_ -ne $null } -join ';'
         }
 
