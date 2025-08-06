@@ -107,6 +107,27 @@ Describe 'Install-RequiredModule' {
             } 
         }
 
+        Context 'Module is installed in previous PowerShell version' {
+            BeforeAll {
+                $installedModuleDetails = Get-ModuleDetails
+                $foundModuleDetails = Get-ModuleDetails
+                Mock Get-InstalledModule { return $installedModuleDetails } 
+            }
+
+            It 'executes without error' {            
+                { Install-RequiredModule -RepositoryName $repository -ModuleName $moduleName } | 
+                    Should -Not -Throw
+            } 
+
+            It 'does not attempt to find module' {
+                Mock Find-Module { return $foundModuleDetails } 
+
+                Install-RequiredModule -RepositoryName $repository -ModuleName $moduleName  
+                
+                Should -Not -Invoke Find-Module -Scope It
+            } 
+        }
+
         Context 'Module is not already installed' {
             BeforeAll {
                 $installedModuleDetails = Get-ModuleDetails
