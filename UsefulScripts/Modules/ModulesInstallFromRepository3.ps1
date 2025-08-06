@@ -7,8 +7,8 @@ Installs the specified modules if not already installed.
 .NOTES
 Author:			Simon Elms
 Requires:		Windows PowerShell 5.1, or cross-platform PowerShell
-Version:		1.0.0 
-Date:			18 Dec 2024
+Version:		1.1.0 
+Date:			17 Jun 2025
 
 #>
 
@@ -58,7 +58,7 @@ function Copy-HashTable ([hashtable]$HashTable)
     }
 
     $copy = @{}
-    foreach($key in $HashTable.Keys)
+    foreach ($key in $HashTable.Keys)
     {
         $value = $HashTable[$key]
         if ($value -is [Collections.Hashtable])
@@ -68,7 +68,7 @@ function Copy-HashTable ([hashtable]$HashTable)
         else
         {
             # Assumes the value of the hashtable element is a value type, not a reference type.
-			# Works also if the value is an array of values types (ie does a deep copy of the array).
+            # Works also if the value is an array of values types (ie does a deep copy of the array).
             $copy[$key] = $value
         }
     }
@@ -137,6 +137,31 @@ function Install-RequiredModule (
         if ($installedModuleInfo)
         {
             Write-Host "Version $($installedModuleInfo.Version) of module '$moduleName' is already installed."
+            return
+        }
+
+        # A module may not be visible via Get-InstalledModule in PowerShell Core (6+) if it was installed via 
+        # PowerShell 5.1.  So try Get-Module as well.
+        $getModuleParameters = @{ Name = $ModuleName }
+        if ($moduleVersionInfo.Count -gt 0)
+        {
+            $fullyQualifiedParameters = Copy-HashTable $moduleVersionInfo
+            # Unfortunately parameter 'MinimumVersion' for Get-InstalledModule doesn't exist for Get-Module; it's 
+            # called 'ModuleVersion' instead (they are exactly equivalent in meaning).
+            if ($fullyQualifiedParameters.MinimumVersion)
+            {
+                $fullyQualifiedParameters.ModuleVersion = $fullyQualifiedParameters.MinimumVersion
+                # Get-Module will throw an error if we include a non-existent parameter name, so remove it.
+                $fullyQualifiedParameters.Remove('MinimumVersion')
+            }
+            $fullyQualifiedParameters.ModuleName = $ModuleName
+            $getModuleParameters = @{ FullyQualifiedName = $fullyQualifiedParameters }
+        }
+
+        $moduleInfo = Get-Module @getModuleParameters -ListAvailable
+        if ($moduleInfo)
+        {
+            Write-Host "Version $($moduleInfo.Version) of module '$moduleName' found."
             return
         }
         
