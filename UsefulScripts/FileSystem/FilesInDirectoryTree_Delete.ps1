@@ -15,9 +15,10 @@ Version:		1.0.0
 Date:			5 Aug 2023
 
 #>
-$RootDirectoryPath = "C:\Temp"
-$FileNamePattern = '*.cs'
+$RootDirectoryPath = "C:\Temp\DeleteCopiesDemo"
+$FileNamePattern = '* - Copy.*'
 
 Clear-Host
 
-Get-ChildItem $RootDirectoryPath -Filter $FileNamePattern -Recurse -File | Remove-Item
+# Remove the -WhatIf once you've confirmed the correct files are being targeted for deletion.
+Get-ChildItem $RootDirectoryPath -Filter $FileNamePattern -Recurse -File | Remove-Item -WhatIf
