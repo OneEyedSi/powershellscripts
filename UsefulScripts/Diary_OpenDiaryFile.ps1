@@ -11,12 +11,13 @@ The $_year variable at the head of the script can be set to a specific year to o
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
-Version:		1.0.0 
-Date:			11 Aug 2024
+Version:		1.0.1 
+Date:			23 Mar 2026
 
 #>
 
 $_year = [datetime]::Now.Year
+#$_year = 2023
 $_generateFile = $true
 # For case-sensitive format codes see "Custom date and time format strings", 
 # https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings
@@ -78,7 +79,7 @@ function GetDiaryBody([DateTime]$StartDate, [string]$DateEntryDateFormat)
 function GetDiaryText([DateTime]$StartDate, [string]$DateEntryDateFormat, [string]$TitleTemplate)
 {
     $year = $StartDate.Year
-    $titleText = $TitleTemplate -replace '{year}',$year
+    $titleText = $TitleTemplate -replace '{year}', $year
     $underline = '=' * $titleText.Length
 
     $diaryBody = GetDiaryBody -StartDate $StartDate -DateEntryDateFormat $DateEntryDateFormat
@@ -104,14 +105,14 @@ function NewDiaryFile([string]$FilePath, [hashtable]$FileSettings, [int]$Year, [
 {
     $startDate = [DateTime]::new($Year, 1, 1)
     $diaryText = GetDiaryText -StartDate $startDate -DateEntryDateFormat $DateEntryDateFormat `
-                            -TitleTemplate $FileSettings.TitleTemplate
+        -TitleTemplate $FileSettings.TitleTemplate
     
     $diaryText | Out-File -FilePath $FilePath
 }
 
 function OpenDiaryFile([hashtable]$FileSettings, [int]$Year, [string]$DateEntryDateFormat)
 {
-    $fileName = $FileSettings.FileNameTemplate -replace '{year}',$Year
+    $fileName = $FileSettings.FileNameTemplate -replace '{year}', $Year
     $filePath = Join-Path -Path $FileSettings.FolderPath -ChildPath $fileName
 
     if (-not (Test-Path -Path $filePath -PathType Leaf))
