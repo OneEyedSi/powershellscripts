@@ -1,46 +1,43 @@
 ﻿<#
 .SYNOPSIS
-Opens the current diary file.
-
-.DESCRIPTION
-Opens the current diary file.  If the diary file doesn't exist it will be created and then opened.
-
-The $_year variable at the head of the script can be set to a specific year to open the diary for that year.  For example:
-    $_year = 2023
+Prints date headings for a markdown diary or, alternatively, generates an entire empty diary file for 
+a given year.
 
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
-Version:		1.0.1 
-Date:			23 Mar 2026
+Version:		1.0.0 
+Date:			22 June 2024
 
 #>
 
-$_year = [datetime]::Now.Year
-#$_year = 2023
+$_year = 2022
 $_generateFile = $true
 # For case-sensitive format codes see "Custom date and time format strings", 
 # https://learn.microsoft.com/en-us/dotnet/standard/base-types/custom-date-and-time-format-strings
 $_dateEntryDateFormat = 'ddd d MMM'
 
+# Only used if $_generateFile is $false
+$_printEntriesOnlySettings = @{
+    StartDate='2021-06-07'
+}
+
+# Only used if $_generateFile is $true
 $_fileSettings = @{
-    FolderPath = "C:\Diary"
+    FolderPath = "C:\Users\SimonE\SimonsDocuments\Personal\Diary"
     FileNameTemplate = 'Diary_{year}.md'
-    TitleTemplate = 'Diary, {year}'
+    TitleTemplate = 'Diary, Simon Elms, {year}'
+    # WARNING: Take care if you set this.  It may result in you deleting an existing diary file.
+    OverwriteExistingFile = $true
 }
 
 # -------------------------------------------------------------------------------------------------
 # No changes needed below this point; the remaining code is generic.
 # -------------------------------------------------------------------------------------------------
 
-function GetDateText([DateTime]$Date, [string]$DateEntryDateFormat)
+function GetDateEntry([DateTime]$Date, [string]$DateEntryDateFormat)
 {
-    return $Date.ToString($DateEntryDateFormat)
-}
-
-function GetDateHeading([DateTime]$Date, [string]$DateEntryDateFormat)
-{
-    $dateText = GetDateText $Date $DateEntryDateFormat
+    $dateText = $Date.ToString($DateEntryDateFormat)
     $underline = '-' * $dateText.Length
 
     $entryText = @"
@@ -66,7 +63,7 @@ function GetDiaryBody([DateTime]$StartDate, [string]$DateEntryDateFormat)
     $lineSpacer = ''
     while ($date.Year -lt $nextYear)
     {
-        $dateEntry = GetDateHeading -Date $date -DateEntryDateFormat $DateEntryDateFormat
+        $dateEntry = GetDateEntry -Date $date -DateEntryDateFormat $DateEntryDateFormat
         $diaryBody += $lineSpacer + $dateEntry
 
         $date = $date.AddDays(1)
@@ -79,7 +76,7 @@ function GetDiaryBody([DateTime]$StartDate, [string]$DateEntryDateFormat)
 function GetDiaryText([DateTime]$StartDate, [string]$DateEntryDateFormat, [string]$TitleTemplate)
 {
     $year = $StartDate.Year
-    $titleText = $TitleTemplate -replace '{year}', $year
+    $titleText = $TitleTemplate -replace '{year}',$year
     $underline = '=' * $titleText.Length
 
     $diaryBody = GetDiaryBody -StartDate $StartDate -DateEntryDateFormat $DateEntryDateFormat
@@ -101,31 +98,35 @@ $diaryBody
     return $diaryText
 }
 
-function NewDiaryFile([string]$FilePath, [hashtable]$FileSettings, [int]$Year, [string]$DateEntryDateFormat)
+function NewDiaryFile([hashtable]$FileSettings, [int]$Year, [string]$DateEntryDateFormat)
 {
-    $startDate = [DateTime]::new($Year, 1, 1)
-    $diaryText = GetDiaryText -StartDate $startDate -DateEntryDateFormat $DateEntryDateFormat `
-        -TitleTemplate $FileSettings.TitleTemplate
-    
-    $diaryText | Out-File -FilePath $FilePath
-}
-
-function OpenDiaryFile([hashtable]$FileSettings, [int]$Year, [string]$DateEntryDateFormat)
-{
-    $fileName = $FileSettings.FileNameTemplate -replace '{year}', $Year
+    $fileName = $FileSettings.FileNameTemplate -replace '{year}',$year
     $filePath = Join-Path -Path $FileSettings.FolderPath -ChildPath $fileName
 
-    if (-not (Test-Path -Path $filePath -PathType Leaf))
+    if (-not $FileSettings.OverwriteExistingFile -and (Test-Path -Path $filePath -PathType Leaf))
     {
-        NewDiaryFile $filePath $FileSettings $Year $DateEntryDateFormat
+        throw "File $filePath already exists and OverwriteExistingFile is False.  Aborting diary creation."
     }
-
-    Invoke-Item -LiteralPath $filePath
+    
+    $startDate = [DateTime]::new($Year, 1, 1)
+    $diaryText = GetDiaryText -StartDate $startDate -DateEntryDateFormat $DateEntryDateFormat `
+                            -TitleTemplate $FileSettings.TitleTemplate
+    
+    $diaryText | Out-File -FilePath $filePath
 
     return $filePath
 }
 
 Clear-Host
 
-$filePath = OpenDiaryFile -FileSettings $_fileSettings -Year $_year -DateEntryDateFormat $_dateEntryDateFormat
-Write-Host "Diary file $filePath should now be open for editing."
+if ($_generateFile)
+{
+    $newFilePath = NewDiaryFile -FileSettings $_fileSettings -Year $_year -DateEntryDateFormat $_dateEntryDateFormat
+    Write-Host "New diary file created: $newFilePath"
+}
+else 
+{
+    $startDate = [DateTime]::Parse($_printEntriesOnlySettings.StartDate)
+    $diaryBody = GetDiaryBody -StartDate $startDate -DateEntryDateFormat $_dateEntryDateFormat
+    Write-Host $diaryBody
+}
