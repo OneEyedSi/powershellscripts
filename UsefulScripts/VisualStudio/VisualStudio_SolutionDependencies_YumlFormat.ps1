@@ -41,31 +41,32 @@ If projects have been selected for highlighting then script variable $_useColour
 the projects listed in $_projectNamesToHighlight will be highlighted, along with the projects 
 above or below them in the graph if either $_highlightNodesAbove or $_highlightNodesBelow are set.
 
-In addition to highlighting projects with colour, you can use $_showLevelNumbers to add text 
-"(level nnn)" to each node, where nnn is the level in the hierarchy, counting from 0 at the 
-top-level projects.  
-
 The target frameworks (ie the .NET versions each project can be compiled against) can be included 
 for each project by setting $_showTargetFrameworks $true.
 
 .NOTES
 Author:			Simon Elms
-Requires:		PowerShell 5.1
-Version:		3.0.1
-Date:			7 Aug 2025
+Requires:		PowerShell 7.6
+Version:		4.0.0
+Date:			12 May 2026
 
 For a generalised script for creating a Yuml.me dependency graph from arbitrary parent-child 
 pairs, see DemosAndExperiments/DEMO_Hierarchy_GetYumlCodeForDependencyGraph.ps1 in the 
 PowerShell repository.
 
+Using Measure-Object to get the maximum project Id doesn't work in PowerShell 5.1, as id is a 
+hashtable key, not a PS object property.  See function PipelineGetProjectRelationship for details.  
+So this script requires PowerShell 7.6 or later (it may work in PowerShell 6 or 7.x but hasn't 
+been tested with them.  It definitely doesn't work with PowerShell 5.1).
+
 #>
 
-$_solutionFilePath = "C:\Working\SourceControl\Smartly\PIProject\PIGateway.sln"
+$_solutionFilePath = "C:\Working\SourceControl\Smartly\Smartpayroll\Web\NetPay_Redesign.sln"
 
 $_projectNamesToHighlight = @()                            
 $_highlightNodesAbove = $true
 $_highlightNodesBelow = $false
-$_showOnlyHighlightedNodes = $true
+$_showOnlyHighlightedNodes = $false
 
 # Ignored if _projectNamesToHighlight set.
 $_useColours = $true
@@ -493,6 +494,10 @@ function PipelineGetProjectRelationship
 {
     begin 
     {
+        # Using Measure-Object to get the maximum project Id doesn't work in PowerShell 5.1, as id 
+        # is a hashtable key, not a PS object property.  So this script requires PowerShell 7.6 or 
+        # later (it may work in PowerShell 6 or 7.x but hasn't been tested with them.  It 
+        # definitely doesn't work with PowerShell 5.1).
         $maxProjectId = $AllProjectInfo | Measure-Object -Property id -Maximum | Select-Object -ExpandProperty Maximum
         $newProjectId = $maxProjectId + 1
         $projectRelationships = @()
@@ -847,8 +852,23 @@ function PipelineGetNetTargetFramework
 
 function GetHierarchyLevelColour($LevelNumber)
 {
-    $colours = @('magenta', 'mediumblue', 'cyan', `
-            'lawngreen', 'yellow', 'darkorange', 'red', 'brown')
+    # It seems with the revamp of Yuml that it no longer obeys all the CSS colour names exactly.  For example, 
+    # "yellow" is now displayed as #fde68a instead of #FFFF00, and "red" is now #fca5a5 instead of #ff0000.  
+    # So use colour codes instead.
+    <#
+        #FF00FF: Magenta
+        #9370DB: MediumPurple
+        #6495ED: CornflowerBlue
+        #00FFFF: Cyan
+        #3CB371: MediumSeaGreen
+        #7CFC00: LawnGreen
+        #FFD700: Gold
+        #FF8C00: DarkOrange
+        #FA8072: Salmon
+        #CD853F: Peru
+    #>
+    $colours = @('#FF00FF', '#9370DB', '#6495ED', '#00FFFF', `
+            '#3CB371', '#7CFC00', '#FFD700', '#FF8C00', '#FA8072', '#CD853F')
 
     $numberColours = $colours.Count
     $colourIndex = $LevelNumber % $numberColours
@@ -1053,8 +1073,12 @@ function PipelineGetYumlNode
             $node = "[$name{bg:$colour}]"
             if ($targetFrameworks)
             {
-                $node = "[$name;$targetFrameworks{bg:$colour}]"
+                $node = "[$name{bg:$colour}|$targetFrameworks]"
             }
+        }
+        elseif ($targetFrameworks)
+        {
+            $node = "[$name|$targetFrameworks]"
         }
 
         $nodes += $node
@@ -1113,6 +1137,7 @@ function GenerateProjectDependencyGraph($SolutionFilePath, $ProjectNamesToHighli
     $allProjectInfo = GetAllProjectInfo $SolutionFilePath
 
     $allProjectInfo, $allProjectRelationships = $allProjectInfo | PipelineGetProjectRelationship $allProjectInfo
+
     SetHierarchyLevels $allProjectInfo $allProjectRelationships
 
     if ($ShowTargetFrameworks)
