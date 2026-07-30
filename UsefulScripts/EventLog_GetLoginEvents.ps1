@@ -1,32 +1,44 @@
 ﻿<#
 .SYNOPSIS
-Gets most recent login events from the Security event log.
+Gets most recent unlock screen and login events from the Security event log.
 
 .DESCRIPTION
-The login events are filtered so they only show login events for the specified user, not 
-automated system login events.
+The event IDs captured are:
+- 4624 (Security event log): Account logon session created (user logged in)
+- 4801 (Security event log): The workstation was unlocked
+
+We only want user-initiated events, not automated system events, for the specified user.  For both 
+event IDs captured, the user appears in the "EventData.TargetUserName" property.  The format is 
+different for the two event IDs:
+- 4624: "<user name>@<domain name>"
+- 4801: "<user name>" (no domain)
 
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
-Version:		2.0.1 
-Date:			  4 Jun 2024
+Version:		3.0.0
+Date:			  30 Jul 2026
 
 #>
 
-$numberOfEventsToReturn = 10
-$userNameToCheck = 'simon.elms@datacom.com'
+$numberOfEventsToReturn = 25
+$userNameWithoutDomain = 'joe.bloggs'
+$userEmail = 'joe.bloggs@random.com'
 
-$computerToCheck = $env:COMPUTERNAME
 $filterXml = @"
 <QueryList>
   <Query Id="0" Path="Security">
     <Select Path="Security">
-	*[System[(EventID=4624)]]
-	and 
-	*[EventData[Data[@Name='SubjectUserName'] and (Data='$computerToCheck')]]
-	and 
-	*[EventData[Data[@Name='TargetUserName'] and (Data='$userNameToCheck')]]
+	    *[System[(EventID=4624)]]
+      and 
+      *[EventData[Data[@Name='TargetUserName'] and (Data='$userEmail')]]
+    </Select>
+  </Query>
+  <Query Id="1" Path="Security">
+    <Select Path="Security">
+	    *[System[(EventID=4801)]]
+      and 
+      *[EventData[Data[@Name='TargetUserName'] and (Data='$userNameWithoutDomain')]]
     </Select>
   </Query>
 </QueryList>
@@ -53,10 +65,11 @@ Clear-Host
 
 Write-Message 'Configuration:'
 Write-Message 'Number of events to return:' $numberOfEventsToReturn -IndentLevel 1
-Write-Message 'For username: ' $userNameToCheck -IndentLevel 1
-Write-Message 'On computer: ' $computerToCheck -IndentLevel 1
+Write-Message 'For username: ' "$userNameWithoutDomain, $userEmail" -IndentLevel 1
 Write-Host
 Write-Message 'Reading event logs...'
 Write-Host
 
-Get-WinEvent -FilterXml $filterXml -MaxEvents $numberOfEventsToReturn
+Get-WinEvent -FilterXml $filterXml -MaxEvents $numberOfEventsToReturn | 
+  Select-Object TimeCreated, Id, Message |
+  Format-Table
