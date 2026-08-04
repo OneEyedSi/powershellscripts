@@ -16,8 +16,8 @@ different for the two event IDs:
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
-Version:		3.0.0
-Date:			  30 Jul 2026
+Version:		4.0.0 
+Date:       4 Aug 2026
 
 #>
 
@@ -61,6 +61,44 @@ function Write-Message ([string]$Message, $Argument, [int]$IndentLevel)
     }
 }
 
+function Write-Result($Results)
+{
+  if (-not $Results)
+  {
+    Write-Host -ForegroundColor Yellow 'No events found.'
+    return
+  }
+
+  $mostRecentResult = $Results | Select-Object -First 1
+  $latestDate = $mostRecentResult.TimeCreated.Date
+
+  $formatString = '{0,-19}  {1,-4}  {2}'
+  $dateFormat = 'yyyy-MM-dd HH:mm:ss'
+  $maxMessageLength = 40
+
+  Write-Host ($formatString -f 'TimeCreated', 'ID', 'Message')
+  Write-Host ($formatString -f '-----------', '--', '-------')
+
+  foreach ($result in $Results)
+  {
+    $resultDate = $result.TimeCreated.Date
+    $colourIndex = ($latestDate - $resultDate).Days % 2
+    $colour = if ($colourIndex -eq 0) { 'White' } else { 'Cyan' }
+
+    $formattedTime = $result.TimeCreated.ToString($dateFormat)
+
+    $messageLines = $result.Message -split '\r?\n'
+    $firstLine = $messageLines[0]
+    $messageToDisplay = $firstLine
+    if ($firstLine.Length -gt $maxMessageLength) 
+    { 
+      $messageToDisplay = $firstLine.Substring(0, $maxMessageLength) + '...' 
+    }
+
+    Write-Host ($formatString -f $formattedTime, $result.Id, $messageToDisplay) -ForegroundColor $colour
+  }
+}
+
 Clear-Host
 
 Write-Message 'Configuration:'
@@ -70,6 +108,7 @@ Write-Host
 Write-Message 'Reading event logs...'
 Write-Host
 
-Get-WinEvent -FilterXml $filterXml -MaxEvents $numberOfEventsToReturn | 
-  Select-Object TimeCreated, Id, Message |
-  Format-Table
+$results = Get-WinEvent -FilterXml $filterXml -MaxEvents $numberOfEventsToReturn | 
+  Select-Object TimeCreated, Id, Message
+
+Write-Result $results

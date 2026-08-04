@@ -21,8 +21,8 @@ the "EventData.param5" property.  This is prepended to the Message property in t
 .NOTES
 Author:			Simon Elms
 Requires:		PowerShell 5.1
-Version:		3.0.0 
-Date:       30 Jul 2026
+Version:		4.0.0 
+Date:       4 Aug 2026
 
 #>
 
@@ -66,6 +66,44 @@ function Write-Message ([string]$Message, $Argument, [int]$IndentLevel)
   }
 }
 
+function Write-Result($Results)
+{
+  if (-not $Results)
+  {
+    Write-Host -ForegroundColor Yellow 'No events found.'
+    return
+  }
+
+  $mostRecentResult = $Results | Select-Object -First 1
+  $latestDate = $mostRecentResult.TimeCreated.Date
+
+  $formatString = '{0,-19}  {1,-4}  {2}'
+  $dateFormat = 'yyyy-MM-dd HH:mm:ss'
+  $maxMessageLength = 50
+
+  Write-Host ($formatString -f 'TimeCreated', 'ID', 'Message')
+  Write-Host ($formatString -f '-----------', '--', '-------')
+
+  foreach ($result in $Results)
+  {
+    $resultDate = $result.TimeCreated.Date
+    $colourIndex = ($latestDate - $resultDate).Days % 2
+    $colour = if ($colourIndex -eq 0) { 'White' } else { 'Cyan' }
+
+    $formattedTime = $result.TimeCreated.ToString($dateFormat)
+
+    $messageLines = $result.Message -split '\r?\n'
+    $firstLine = $messageLines[0]
+    $messageToDisplay = $firstLine
+    if ($firstLine.Length -gt $maxMessageLength) 
+    { 
+      $messageToDisplay = $firstLine.Substring(0, $maxMessageLength) + '...' 
+    }
+
+    Write-Host ($formatString -f $formattedTime, $result.Id, $messageToDisplay) -ForegroundColor $colour
+  }
+}
+
 function Get-XmlDoc([string]$XmlString)
 {
   $xmlDoc = New-Object System.Xml.XmlDocument
@@ -91,11 +129,12 @@ Write-Host
 Write-Message 'Reading event logs...'
 Write-Host
 
-Get-WinEvent -FilterXml $filterXml -MaxEvents $numberOfEventsToReturn | 
+$results = Get-WinEvent -FilterXml $filterXml -MaxEvents $numberOfEventsToReturn | 
   Select-Object TimeCreated, Id, Message, @{Name = 'XmlDoc'; Expression = { Get-XmlDoc $_.ToXml() } } | 
   Select-Object TimeCreated, Id, Message, XmlDoc, @{Name = 'XmlNSMgr'; Expression = { Get-XmlNamespaceManager $_.XmlDoc } } | 
   Select-Object TimeCreated, Id, Message, `
     @{Name = 'ShutdownType'; Expression = { $_.XmlDoc.SelectSingleNode('/ns:Event/ns:EventData/ns:Data[@Name="param5"]', $_.XmlNSMgr).InnerText } } |
   Select-Object TimeCreated, Id, 
-    @{Name = 'Message'; Expression = { if ($_.ShutdownType) { "Planned shutdown. Shutdown Type: $($_.ShutdownType). $($_.Message)" } else { $_.Message } } } |
-  Format-Table
+    @{Name = 'Message'; Expression = { if ($_.ShutdownType) { "Planned shutdown. Shutdown Type: $($_.ShutdownType)." } else { $_.Message } } } 
+  
+Write-Result $results
