@@ -3,13 +3,13 @@
 Generates code for creating a graph of dependencies between projects in a Visual Studio solution.
 
 .DESCRIPTION
-Generates code for creating a dependency graph in https://yuml.me.  The graph will show the 
-dependencies between the projects in a Visual Studio solution.
+Generates code for creating a dependency graph in either YUML (https://yuml.me) or Mermaid format.  
+The graph will show the dependencies between the projects in a Visual Studio solution.
 
 In addition to displaying projects, the dependency graph will include other dependencies, such as 
 DACPAC files referenced from SQL Server Database projects.  Nodes representing DACPAC files will 
 be labelled "filename (DACPAC)".  Nodes representing other files and artifacts will be labelled 
-"filename (ARTIFACT)".
+"filename (ARTIFACT)". 
 
 The layers in the dependency hierarchy can optionally be colour-coded.  This is useful for large 
 solutions to highlight top-level projects, without parents, and bottom-level projects, without 
@@ -17,65 +17,496 @@ children.  Projects that share the same level in the hierarchy, counting from th
 projects, will share the same colour.  For example, all top level projects will share the same 
 colour, then all children of those top level projects will share a different colour, etc.
 
-Setting script variable $_useColours to $true enables the colour-coding of all projects in the 
-solution.  If colour-coding is not enabled all projects will be coloured light grey.
+For really large solutions even colour-coding the project nodes may not be enough for easy 
+understanding of the dependency graph.  In that case individual project nodes and the dependency 
+paths they belong to can be highlighted in colour, leaving the remaining project nodes in the 
+default colour.
 
-For really large solutions even colour-coding the projects may not be enough for easy 
-understanding of the dependency graph.  In that case individual projects and the dependency paths 
-they belong to can be highlighted in colour, leaving the remaining projects coloured light grey.
+To further simplify a complex dependency graph, the graph can be filtered to show only the 
+highlighted project nodes and the dependency paths they belong to, removing all other project 
+nodes from the graph.
 
-To highlight specific projects, add the project names to the list in script variable 
-$_projectNamesToHighlight.  Optionally you can set $_highlightNodesAbove or $_highlightNodesBelow 
-$true.  When $_highlightNodesAbove is set the selected projects and all projects above them 
-in the graph (parents, grandparents, etc) will be highlighted in colour.  When 
-$_highlightNodesBelow is set the selected projects and all projects below them 
-in the graph (children, grandchildren, etc) will be highlighted in colour.  If neither 
-$_highlightNodesAbove nor $_highlightNodesBelow are set then only the projects listed in 
-$_projectNamesToHighlight will be highlighted in colour.
+RUNNING THE SCRIPT:
+Either:
+1. From the PowerShell console:
+    Open a PowerShell 7.0 or later console, navigate to the folder containing the script, then run 
+    the script, specifying at least the -SolutionFilePath and the -Format parameter values.  
+    For example:
+    .\VisualStudio_SolutionDependencies.ps1 -SolutionFilePath "C:\SourceControl\Web\MyWebsite.sln" -Format "YUML"
 
-When one of more projects are highlighted you can remove clutter by setting script variable 
-$_showOnlyHighlightedNodes $true.  In that case all non-highlighted projects are removed from the 
-graph, leaving only the highlighted projects.
+2. Inside an editor, such as Visual Studio Code or PowerShell ISE:
+    Open the script file in the editor.  Ignore the parameters in the Param block, and 
+    instead set the default variables immediately below the Param() block.  Set the default 
+    variables for at least the solution file path and the output format, and optionally for the 
+    other default variables as well.  Then run the script.  The output will be displayed in the 
+    editor terminal window.
 
-If projects have been selected for highlighting then script variable $_useColours is ignored: Only 
-the projects listed in $_projectNamesToHighlight will be highlighted, along with the projects 
-above or below them in the graph if either $_highlightNodesAbove or $_highlightNodesBelow are set.
+    NOTE: The reason the parameters are ignored when running the script inside an editor is that 
+    it's not possible to set default values for switch parameters.  The alternative, boolean 
+    parameters, are too awkward to call when running the script from the command line, and users 
+    would expect switch parameters rather than boolean parameters.  So the default variables were 
+    added to allow the script to be run inside an editor.
 
-The target frameworks (ie the .NET versions each project can be compiled against) can be included 
-for each project by setting $_showTargetFrameworks $true.
+Once the script has been run, copy and paste the output code into the YUML or Mermaid editor to 
+generate the dependency graph.
+
+.PARAMETER SolutionFilePath
+The path to the Visual Studio solution file to analyse.
+
+.PARAMETER Format
+Determines the format of the output code.  Valid values are: 
+- "YUML"
+- "MERMAID".
+
+.PARAMETER ShowTargetFrameworks
+Includes the .NET target framework(s) for each project in the dependency graph.
+
+.PARAMETER UseColours
+Displays the project nodes in the dependency graph in different colours, based on their level in 
+the dependency hierarchy.  Top level projects (without parents) will be displayed in one colour, 
+the children of those top level projects will be displayed in a different colour, and so on.
+
+If a project node has multiple parents at different levels in the hierarchy, it will have the 
+colour associated with the longest path from a top level project to that project node.  For 
+example, if a project node has one parent at level 1 and another parent at level 3, the project 
+node will be displayed in the colour associated with level 4 (the longest path from a top level 
+project to that project node).
+
+.PARAMETER ProjectNamesToHighlight
+Comma-separated list of project names to highlight in colour.  All other project nodes will be 
+displayed in the default colour of the renderer.
+
+If this parameter is specified then parameter UseColours is ignored.
+
+.PARAMETER HighlightNodesAbove
+Highlights all project nodes in the dependency graph above the projects listed in 
+ProjectNamesToHighlight.  In other words, it highlights the projects referencing the projects 
+listed in ProjectNamesToHighlight, and the projects referencing those projects, etc.
+
+.PARAMETER HighlightNodesBelow
+Highlights all project nodes in the dependency graph below the projects listed in 
+ProjectNamesToHighlight.  In other words, it highlights the projects referenced by the projects 
+listed in ProjectNamesToHighlight, and the projects referenced by those projects, etc.
+
+.PARAMETER ShowOnlyHighlightedNodes
+Includes only the highlighted project nodes in the dependency graph.  All other nodes are removed 
+from the graph.  Used to reduce clutter in the graph for large solutions, when only a few projects 
+are of interest.
+
+If ProjectNamesToHighlight is not set and UseColours is set then all project nodes will be 
+highlighted, so this parameter will have no effect.
+
+If ProjectNamesToHighlight is set then only the projects listed in ProjectNamesToHighlight will be 
+highlighted, along with the nodes above or below them in the graph if either HighlightNodesAbove 
+or HighlightNodesBelow are set.
 
 .NOTES
 Author:			Simon Elms
-Requires:		PowerShell 7.6
-Version:		4.0.0
-Date:			12 May 2026
+Requires:		PowerShell 7.0
+Version:		5.0.0
+Date:			8 Aug 2026
 
-For a generalised script for creating a Yuml.me dependency graph from arbitrary parent-child 
+For a generalised script for creating a YUML dependency graph from arbitrary parent-child 
 pairs, see DemosAndExperiments/DEMO_Hierarchy_GetYumlCodeForDependencyGraph.ps1 in the 
 PowerShell repository.
 
-Using Measure-Object to get the maximum project Id doesn't work in PowerShell 5.1, as id is a 
-hashtable key, not a PS object property.  See function PipelineGetProjectRelationship for details.  
-So this script requires PowerShell 7.6 or later (it may work in PowerShell 6 or 7.x but hasn't 
-been tested with them.  It definitely doesn't work with PowerShell 5.1).
+Why the script requires PowerShell 7.0 or later:
+
+Using Measure-Object to measure hashtables was introduced in PowerShell 6.  It's used in 
+function PipelineGetProjectRelationship to get the maximum project Id.  In PowerShell 5.1 
+Measure-Object can only be used to measure PS object properties, not hashtables.
+
+string.ReplaceLineEndings() was introduced in PowerShell 7.  The script uses 
+string.ReplaceLineEndings() to normalise line endings in the generated YUML or Mermaid code.
 
 #>
 
-$_solutionFilePath = "C:\Working\SourceControl\Smartly\Smartpayroll\Web\NetPay_Redesign.sln"
+Param(
+    [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
+    [string]$SolutionFilePath,
 
-$_projectNamesToHighlight = @()                            
-$_highlightNodesAbove = $true
-$_highlightNodesBelow = $false
-$_showOnlyHighlightedNodes = $false
+    [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
+    [string]$Format,
 
-# Ignored if _projectNamesToHighlight set.
-$_useColours = $true
+    [Parameter(Mandatory = $false)]
+    [switch]$ShowTargetFrameworks,
 
-$_showTargetFrameworks = $true
+    [Parameter(Mandatory = $false)]
+    [switch]$UseColours,
+
+    [Parameter(Mandatory = $false, ParameterSetName = "HighlightNamedNodesOnly")]
+    [array]$ProjectNamesToHighlight,
+
+    [Parameter(Mandatory = $false, ParameterSetName = "HighlightNamedNodesOnly")]
+    [switch]$HighlightNodesAbove,
+
+    [Parameter(Mandatory = $false, ParameterSetName = "HighlightNamedNodesOnly")]
+    [switch]$HighlightNodesBelow,
+
+    [Parameter(Mandatory = $false, ParameterSetName = "HighlightNamedNodesOnly")]
+    [switch]$ShowOnlyHighlightedNodes
+)
+
+# Set these default variables when running the script in an editor, like Visual Studio Code.
+# Using these default variables gets around the limitation that the switch parameters in the 
+# Param() block cannot have default values set.
+# When running the script from the command line, the parameter values set in the command line 
+# will be used and these default variables will be ignored, even if set.
+$_solutionFilePathDefault = "C:\Working\SourceControl\Test.sln"
+#Valid values: YUML, MERMAID
+$_formatDefault = "MERMAID"
+$_showTargetFrameworksDefault = $true
+
+$_useColoursDefault = $true
+
+$_projectNamesToHighlightDefault = @()
+$_highlightNodesAboveDefault = $true
+$_highlightNodesBelowDefault = $true
+$_showOnlyHighlightedNodesDefault = $true
 
 # -------------------------------------------------------------------------------------------------
 # No changes needed below this point; the remaining code is generic.
 # -------------------------------------------------------------------------------------------------
+
+#region YUML-specific formatting code -------------------------------------------------------------
+
+function GetYumlNodeHierarchyLevelColour($LevelNumber)
+{
+    # It seems with the revamp of Yuml that it no longer obeys all the CSS colour names exactly.  For example, 
+    # "yellow" is now displayed as #fde68a instead of #FFFF00, and "red" is now #fca5a5 instead of #ff0000.  
+    # So use colour codes instead.
+    <#
+        #FF00FF: Magenta
+        #9370DB: MediumPurple
+        #6495ED: CornflowerBlue
+        #00FFFF: Cyan
+        #3CB371: MediumSeaGreen
+        #7CFC00: LawnGreen
+        #FFD700: Gold
+        #FF8C00: DarkOrange
+        #FA8072: Salmon
+        #CD853F: Peru
+    #>
+    $colours = @('#FF00FF', '#9370DB', '#6495ED', '#00FFFF', `
+            '#3CB371', '#7CFC00', '#FFD700', '#FF8C00', '#FA8072', '#CD853F')
+
+    $numberColours = $colours.Count
+    $colourIndex = $LevelNumber % $numberColours
+    $colour = $colours[$colourIndex]
+    return $colour
+}
+
+function PipelineGetYumlNode 
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
+    $ProjectInfo
+)
+{
+    begin
+    {
+        $nodes = @()
+    }
+
+    process
+    {
+        $name = $ProjectInfo.name
+        $isHighlighted = $ProjectInfo.isHighlighted
+        $hierarchyLevel = $ProjectInfo.hierarchyLevel
+        $targetFrameworks = $ProjectInfo.targetFrameworks
+
+        $node = "[$name]"
+        if ($isHighlighted)
+        {
+            $colour = GetYumlNodeHierarchyLevelColour $hierarchyLevel
+            $node = "[$name{bg:$colour}]"
+            if ($targetFrameworks)
+            {
+                $node = "[$name{bg:$colour}|$targetFrameworks]"
+            }
+        }
+        elseif ($targetFrameworks)
+        {
+            $node = "[$name|$targetFrameworks]"
+        }
+
+        $nodes += $node
+    }
+
+    end
+    {
+        return $nodes
+    }
+}
+
+function PipelineGetYumlRelationship
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
+    $AllProjectInfo,
+
+    [Parameter(Position = 1, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
+    $ProjectRelationship
+)
+{
+    begin
+    {
+        $relationships = @()
+    }
+
+    process
+    {
+        $parentInfo = $ProjectRelationship.parentId | PipelineGetProjectInfoById -AllProjectInfo $AllProjectInfo 
+        $childInfo = $ProjectRelationship.childId | PipelineGetProjectInfoById -AllProjectInfo $AllProjectInfo
+
+        # Parent or child info may be null if $AllProjectInfo is filtered to only include highlighted nodes.
+        if (-not $parentInfo -or -not $childInfo)
+        {
+            return
+        }
+
+        $parentNode = $parentInfo | PipelineGetYumlNode 
+        $childNode = $childInfo | PipelineGetYumlNode 
+        $relationship = "$parentNode->$childNode"
+        $relationships += $relationship
+    }
+
+    end
+    {
+        return $relationships
+    }
+}
+
+function BuildYumlCode
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
+    $AllProjectInfo,
+
+    [Parameter(Position = 1, 
+        Mandatory = $true)]
+    $IsolatedProjectInfo,
+
+    [Parameter(Position = 2, 
+        Mandatory = $true)]
+    $AllProjectRelationships
+)
+{
+    $dependencyGraph = @()
+
+    $isolatedProjectNodes = $IsolatedProjectInfo | PipelineGetYumlNode
+    $dependencyGraph += $isolatedProjectNodes
+
+    $relationships = $AllProjectRelationships | PipelineGetYumlRelationship $AllProjectInfo
+    $dependencyGraph += $relationships
+
+    return $dependencyGraph
+}
+
+#endregion YUML-specific formatting code ----------------------------------------------------------
+
+#region Mermaid-specific formatting code ----------------------------------------------------------
+
+function GetMermaidCodeTemplate()
+{
+    # NOTE: Available layout engines are: 
+    #   - dagre (the default, if no YAML front-matter is added to the code.  Messy for large 
+    #           graphs, with curving edges)
+    #   - elk (good for large graphs, highly structured and clean, with right-angles in the edges)
+    #   - cose-bilkent (for clustered distribution of nodes, not good for top-down graphs)
+    #   - tidy-tree (for hierarchical top-down graphs, not good for dependency graphs, where
+    #           nodes can have multiple parents)
+    $documentTemplate = @"
+---
+config:
+  layout: elk
+---
+flowchart TD
+
+classDef magenta fill:Magenta;
+classDef mediumPurple fill:MediumPurple;
+classDef cornflowerBlue fill:CornflowerBlue;
+classDef cyan fill:Cyan;
+classDef mediumSeaGreen fill:MediumSeaGreen;
+classDef lawnGreen fill:LawnGreen;
+classDef gold fill:Gold;
+classDef darkOrange fill:DarkOrange;
+classDef salmon fill:Salmon;
+classDef peru fill:Peru;
+
+classDef highlight stroke: Red,stroke-width: 5px;
+
+{{nodes}}
+
+{{relationships}}
+"@
+
+    # Ensure the line endings are appropriate for the environment the script is running in.
+    # NOTE: string.ReplaceLineEndings() was introduced in PowerShell 7.
+    return $documentTemplate.ReplaceLineEndings()
+}
+
+function GetMermaidNodeHierarchyLevelColourClass($LevelNumber)
+{
+    $colourClasses = @('magenta', 'mediumPurple', 'cornflowerBlue', 'cyan', 'mediumSeaGreen', 
+        'lawnGreen', 'gold', 'darkOrange', 'salmon', 'peru')
+
+    $numberColours = $colourClasses.Count
+    $colourIndex = $LevelNumber % $numberColours
+    $colourClass = $colourClasses[$colourIndex]
+    return $colourClass
+}
+
+function GetProjectIdText($ProjectId)
+{
+    #ASSUMPTION: There won't be more than 9999 nodes (4 digits).
+    $projectIdText = "{0:D4}" -f $ProjectId
+    return $projectIdText
+}
+
+function PipelineGetMermaidNode 
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
+    $ProjectInfo
+)
+{
+    begin
+    {
+        $nodes = @()
+    }
+
+    process
+    {
+        $name = $ProjectInfo.name
+        $isHighlighted = $ProjectInfo.isHighlighted
+        $hierarchyLevel = $ProjectInfo.hierarchyLevel
+        $targetFrameworks = $ProjectInfo.targetFrameworks
+        $projectIdText = GetProjectIdText $ProjectInfo.id
+
+        $nodeInnerText = "<b>$name</b>"
+        if ($targetFrameworks)
+        {
+            # If multiple target frameworks are specified, they will be separated by semi-colons.  
+            # Replace the semi-colons with line breaks for better readability in the graph.
+            # Remove the trailing semi-colon, if any, before replacing the semi-colons with line 
+            # breaks.
+            $targetFrameworks = $targetFrameworks.TrimEnd(';').Replace(';', '<br/>')
+            $nodeInnerText += "<br/>$targetFrameworks"
+        }
+
+        $node = "$projectIdText[`"$nodeInnerText`"]"
+        if ($isHighlighted)
+        {
+            $colourClass = GetMermaidNodeHierarchyLevelColourClass $hierarchyLevel
+            $node = "$node:::${colourClass}"
+        }
+
+        $nodes += $node
+    }
+
+    end
+    {
+        return $nodes
+    }
+}
+
+function PipelineGetMermaidRelationship
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
+    $AllProjectInfo,
+
+    [Parameter(Position = 1, 
+        Mandatory = $true, 
+        ValueFromPipeline = $true)]
+    $ProjectRelationship
+)
+{
+    begin
+    {
+        $relationships = @()
+    }
+
+    process
+    {
+        $parentInfo = $ProjectRelationship.parentId | PipelineGetProjectInfoById -AllProjectInfo $AllProjectInfo 
+        $childInfo = $ProjectRelationship.childId | PipelineGetProjectInfoById -AllProjectInfo $AllProjectInfo
+
+        # Parent or child info may be null if $AllProjectInfo is filtered to only include highlighted nodes.
+        if (-not $parentInfo -or -not $childInfo)
+        {
+            return
+        }
+
+        $parentProjectIdText = GetProjectIdText $parentInfo.id
+        $childProjectIdText = GetProjectIdText $childInfo.id
+
+        $relationship = "$parentProjectIdText --> $childProjectIdText"
+        $relationships += $relationship
+    }
+
+    end
+    {
+        return $relationships
+    }
+}
+
+function BuildMermaidCode
+(    
+    [Parameter(Position = 0, 
+        Mandatory = $true)]
+    $AllProjectInfo,
+
+    [Parameter(Position = 1, 
+        Mandatory = $true)]
+    $IsolatedProjectInfo,
+
+    [Parameter(Position = 2, 
+        Mandatory = $true)]
+    $AllProjectRelationships
+)
+{    
+    $template = GetMermaidCodeTemplate
+    $resultingDocument = $template
+
+    $nodes = $AllProjectInfo | PipelineGetMermaidNode
+    $nodeLines = $nodes -join [Environment]::NewLine
+    $resultingDocument = $resultingDocument -replace "{{nodes}}", $nodeLines
+
+    $relationships = $AllProjectRelationships | PipelineGetMermaidRelationship $AllProjectInfo
+    $relationshipLines = $relationships -join [Environment]::NewLine
+    $resultingDocument = $resultingDocument -replace "{{relationships}}", $relationshipLines
+
+    # Convert the document into an array of strings, as per the YUML result.
+    $dependencyGraph = $resultingDocument -split [Environment]::NewLine
+
+    return $dependencyGraph
+}
+
+#endregion Mermaid-specific formatting code -------------------------------------------------------
+
+#region Functions for building code in different formats ------------------------------------------
+
+function GetCodeBuilder([string]$Format)
+{
+    $codeBuilder = switch ($Format.ToUpper())
+    {
+        "YUML"      { ${function:BuildYumlCode} }
+        "MERMAID"   { ${function:BuildMermaidCode} }
+        default     { throw "Invalid format specified: $Format.  Valid values are: YUML, MERMAID." }
+    }
+
+    return $codeBuilder
+}
+
+#endregion Functions for building code in different formats ---------------------------------------
 
 <#
 .SYNOPSIS
@@ -494,11 +925,13 @@ function PipelineGetProjectRelationship
 {
     begin 
     {
-        # Using Measure-Object to get the maximum project Id doesn't work in PowerShell 5.1, as id 
-        # is a hashtable key, not a PS object property.  So this script requires PowerShell 7.6 or 
-        # later (it may work in PowerShell 6 or 7.x but hasn't been tested with them.  It 
-        # definitely doesn't work with PowerShell 5.1).
-        $maxProjectId = $AllProjectInfo | Measure-Object -Property id -Maximum | Select-Object -ExpandProperty Maximum
+        # Using Measure-Object to measure hashtables was introduced in PowerShell 6.  It's used 
+        # here to get the maximum project Id.  In PowerShell 5.1, Measure-Object can only be used 
+        # to measure PS object properties, not hashtables, so this technique won't work in 
+        # PowerShell 5.1.
+        $maxProjectId = $AllProjectInfo | 
+            Measure-Object -Property id -Maximum | 
+            Select-Object -ExpandProperty Maximum
         $newProjectId = $maxProjectId + 1
         $projectRelationships = @()
     }
@@ -850,32 +1283,6 @@ function PipelineGetNetTargetFramework
     }
 }
 
-function GetHierarchyLevelColour($LevelNumber)
-{
-    # It seems with the revamp of Yuml that it no longer obeys all the CSS colour names exactly.  For example, 
-    # "yellow" is now displayed as #fde68a instead of #FFFF00, and "red" is now #fca5a5 instead of #ff0000.  
-    # So use colour codes instead.
-    <#
-        #FF00FF: Magenta
-        #9370DB: MediumPurple
-        #6495ED: CornflowerBlue
-        #00FFFF: Cyan
-        #3CB371: MediumSeaGreen
-        #7CFC00: LawnGreen
-        #FFD700: Gold
-        #FF8C00: DarkOrange
-        #FA8072: Salmon
-        #CD853F: Peru
-    #>
-    $colours = @('#FF00FF', '#9370DB', '#6495ED', '#00FFFF', `
-            '#3CB371', '#7CFC00', '#FFD700', '#FF8C00', '#FA8072', '#CD853F')
-
-    $numberColours = $colours.Count
-    $colourIndex = $LevelNumber % $numberColours
-    $colour = $colours[$colourIndex]
-    return $colour
-}
-
 function SetHierarchyLevels ($AllProjectInfo, $AllProjectRelationships)
 {
     $maxHierarchyLevel = 50
@@ -1046,91 +1453,7 @@ function GetIsolatedProjectInfo ($AllProjectInfo, $AllProjectRelationships)
     return $isolatedProjectsInfo
 }
 
-function PipelineGetYumlNode 
-(    
-    [Parameter(Position = 0, 
-        Mandatory = $true, 
-        ValueFromPipeline = $true)]
-    $ProjectInfo
-)
-{
-    begin
-    {
-        $nodes = @()
-    }
-
-    process
-    {
-        $name = $ProjectInfo.name
-        $isHighlighted = $ProjectInfo.isHighlighted
-        $hierarchyLevel = $ProjectInfo.hierarchyLevel
-        $targetFrameworks = $ProjectInfo.targetFrameworks
-
-        $node = "[$name]"
-        if ($isHighlighted)
-        {
-            $colour = GetHierarchyLevelColour $hierarchyLevel
-            $node = "[$name{bg:$colour}]"
-            if ($targetFrameworks)
-            {
-                $node = "[$name{bg:$colour}|$targetFrameworks]"
-            }
-        }
-        elseif ($targetFrameworks)
-        {
-            $node = "[$name|$targetFrameworks]"
-        }
-
-        $nodes += $node
-    }
-
-    end
-    {
-        return $nodes
-    }
-}
-
-function PipelineGetYumlRelationship
-(    
-    [Parameter(Position = 0, 
-        Mandatory = $true)]
-    $AllProjectInfo,
-
-    [Parameter(Position = 1, 
-        Mandatory = $true, 
-        ValueFromPipeline = $true)]
-    $ProjectRelationship
-)
-{
-    begin
-    {
-        $relationships = @()
-    }
-
-    process
-    {
-        $parentInfo = $ProjectRelationship.parentId | PipelineGetProjectInfoById -AllProjectInfo $AllProjectInfo 
-        $childInfo = $ProjectRelationship.childId | PipelineGetProjectInfoById -AllProjectInfo $AllProjectInfo
-
-        # Parent or child info may be null if $AllProjectInfo is filtered to only include highlighted nodes.
-        if (-not $parentInfo -or -not $childInfo)
-        {
-            return
-        }
-
-        $parentNode = $parentInfo | PipelineGetYumlNode 
-        $childNode = $childInfo | PipelineGetYumlNode 
-        $relationship = "$parentNode->$childNode"
-        $relationships += $relationship
-    }
-
-    end
-    {
-        return $relationships
-    }
-}
-
-function GenerateProjectDependencyGraph($SolutionFilePath, $ProjectNamesToHighlight, 
+function GenerateProjectDependencyGraph($SolutionFilePath, $Format, $ProjectNamesToHighlight, 
     [bool]$HighlightNodesAbove, [bool]$HighlightNodesBelow, [bool]$ShowOnlyHighlightedNodes, 
     [bool]$UseColours, [bool]$ShowTargetFrameworks)
 {
@@ -1179,17 +1502,40 @@ function GenerateProjectDependencyGraph($SolutionFilePath, $ProjectNamesToHighli
         }
     }
 
-    $isolatedProjectNodes = $isolatedProjectsInfo | PipelineGetYumlNode
+    $codeBuilder = GetCodeBuilder $Format
 
-    $dependencyGraph = @()
-    $dependencyGraph += $isolatedProjectNodes
-
-    $relationships = $allProjectRelationships | PipelineGetYumlRelationship $allProjectInfo
-    $dependencyGraph += $relationships
+    $dependencyGraph = $codeBuilder.Invoke($allProjectInfo, $isolatedProjectsInfo, 
+                                            $allProjectRelationships)
 
     return $dependencyGraph
 }
 
+#region Main script -------------------------------------------------------------------------------
+
 Clear-Host
-GenerateProjectDependencyGraph $_solutionFilePath $_projectNamesToHighlight `
-    $_highlightNodesAbove $_highlightNodesBelow $_showOnlyHighlightedNodes $_useColours $_showTargetFrameworks
+
+if ($host.Name -ne 'ConsoleHost')
+{
+    # Script is being run inside an editor, not in the PowerShell console.  In this case, use the 
+    # values set in the default variables at the top of the script, rather than the values of the 
+    # parameters in the Param() block.    
+    $SolutionFilePath = $_solutionFilePathDefault
+    $Format = $_formatDefault
+    $ShowTargetFrameworks = $_showTargetFrameworksDefault
+    $UseColours = $_useColoursDefault
+    $ProjectNamesToHighlight = $_projectNamesToHighlightDefault
+    $HighlightNodesAbove = $_highlightNodesAboveDefault
+    $HighlightNodesBelow = $_highlightNodesBelowDefault
+    $ShowOnlyHighlightedNodes = $_showOnlyHighlightedNodesDefault
+}
+
+if ($ProjectNamesToHighlight)
+{
+    $UseColours = $false
+}
+
+GenerateProjectDependencyGraph $SolutionFilePath $Format $ProjectNamesToHighlight `
+    $HighlightNodesAbove $HighlightNodesBelow $ShowOnlyHighlightedNodes `
+    $UseColours $ShowTargetFrameworks
+
+#endregion Main script ----------------------------------------------------------------------------
